@@ -108,10 +108,16 @@ export async function availableSlots(
     .limit(1);
   if (!wh || wh.length === 0) return [];
 
-  const { data: bks } = await supabase.rpc("public_busy_times", { p_stylist: stylistId, p_date: dateISO });
+  const { data: bks } = await supabase
+    .from("bookings")
+    .select("starts_at,ends_at")
+    .eq("stylist_id", stylistId)
+    .neq("status", "cancelled")
+    .gte("starts_at", `${dateISO}T00:00:00`)
+    .lte("starts_at", `${dateISO}T23:59:59`);
 
   const buffer = 10;
-  const busy: { start: Date; end: Date }[] = (bks ?? []).map((b: any) => ({ start: new Date(b.starts_at), end: new Date(b.ends_at) }));
+  const busy = (bks ?? []).map((b: any) => ({ start: new Date(b.starts_at), end: new Date(b.ends_at) }));
 
   const dayStart = new Date(`${dateISO}T${(wh[0] as any).start_time}`);
   const dayEnd = new Date(`${dateISO}T${(wh[0] as any).end_time}`);
@@ -195,27 +201,61 @@ export async function createOrder(
     return;
   }
 
-  const { error } = await supabase.rpc("create_public_booking", {
-    p_business: businessId,
-    p_client: {
+  const total = items.reduce((sum, i) => sum + i.price, 0);
+
+  const { data: client, error: ce } = await supabase
+    .from("clients")
+    .insert({
+      business_id: businessId,
       name: details.name,
-      email: details.email || "",
-      phone: details.phone || "",
-      address: address || "",
+      email: details.email || null,
+      phone: details.phone || null,
+      address: address || null,
       marketing_consent: details.marketingConsent,
-    },
-    p_items: items.map((i) => ({
-      service_id: i.serviceId,
-      stylist_id: i.stylistId,
-      starts_at: i.startsAt,
-      ends_at: i.endsAt,
-      price: i.price,
-      service_mode: serviceMode,
-      address: serviceMode === "mobile" ? address || "" : "",
-    })),
-    p_payment: { method, payment_mode: paymentMode },
+      marketing_consent_at: details.marketingConsent ? new Date().toISOString() : null,
+    })
+    .select("id")
+    .single();
+  if (ce) throw ce;
+
+  const { data: order, error: oe } = await supabase
+    .from("orders")
+    .insert({
+      business_id: businessId,
+      client_id: client.id,
+      total,
+      status: paymentMode === "upfront" ? "paid" : "awaiting_confirmation",
+    })
+    .select("id")
+    .single();
+  if (oe) throw oe;
+
+  const bookingStatus = paymentMode === "upfront" ? "confirmed" : "pending";
+  const rows = items.map((i) => ({
+    business_id: businessId,
+    order_id: order.id,
+    client_id: client.id,
+    service_id: i.serviceId,
+    stylist_id: i.stylistId,
+    service_mode: serviceMode,
+    location_type: serviceMode === "mobile" ? "client" : "salon",
+    address: serviceMode === "mobile" ? address || null : null,
+    starts_at: i.startsAt,
+    ends_at: i.endsAt,
+    status: bookingStatus,
+  }));
+  const { error: be } = await supabase.from("bookings").insert(rows);
+  if (be) throw be;
+
+  const { error: pe } = await supabase.from("payments").insert({
+    business_id: businessId,
+    order_id: order.id,
+    provider: "simulated",
+    method,
+    amount: total,
+    status: paymentMode === "upfront" ? "succeeded" : "pending",
   });
-  if (error) throw error;
+  if (pe) throw pe;
 }
 
 export async function cancelBooking(id: string): Promise<void> {
@@ -336,7 +376,6 @@ export async function createProvider(
       name: input.displayName,
       slug,
       account_type: "individual",
-      owner_id: ownerId,
       plan: "free",
       address: input.baseArea ?? null,
       timezone: "Africa/Johannesburg",
@@ -578,26 +617,4 @@ export async function markBookingCompleted(id: string): Promise<void> {
   if (!supabaseEnabled || !supabase) return;
   const { error } = await supabase.from("bookings").update({ status: "completed" }).eq("id", id);
   if (error) throw error;
-}
-
-export async function getMyBusiness(
-  ownerId: string,
-): Promise<{ businessId: string; displayName: string; slug: string } | null> {
-  if (!supabaseEnabled || !supabase) return null;
-  const { data, error } = await supabase
-    .from("businesses")
-    .select("id, provider_profiles(display_name, slug)")
-    .eq("owner_id", ownerId)
-    .eq("account_type", "individual")
-    .limit(1)
-    .maybeSingle();
-  if (error) throw error;
-  if (!data) return null;
-  const prof = (data as any).provider_profiles;
-  const p = Array.isArray(prof) ? prof[0] : prof;
-  return {
-    businessId: (data as any).id,
-    displayName: p?.display_name ?? "My studio",
-    slug: p?.slug ?? "",
-  };
 }

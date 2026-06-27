@@ -37,3 +37,11 @@ create policy proto_update_orders   on orders   for update using (true) with che
 create policy proto_read_reminders   on reminders for select using (true);
 create policy proto_insert_reminders on reminders for insert with check (true);
 create policy proto_update_reminders on reminders for update using (true) with check (true);
+
+-- Provider onboarding writes (added with provider_onboarding_write_policies migration) ----
+create policy proto_insert_businesses        on businesses        for insert with check (true);
+create policy proto_insert_business_settings on business_settings for insert with check (true);
+create policy proto_insert_stylists          on stylists          for insert with check (true);
+create policy proto_insert_stylist_services  on stylist_services  for insert with check (true);
+create policy proto_insert_working_hours     on working_hours     for insert with check (true);
+create policy proto_insert_services          on services          for insert with check (true);

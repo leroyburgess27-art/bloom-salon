@@ -3,13 +3,17 @@
 import { usePathname } from "next/navigation";
 import Header from "@/components/Header";
 
-// Renders the storefront header for client pages, but not for /admin routes
-// (the admin area has its own navigation).
 export default function Chrome({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const isAdmin = pathname?.startsWith("/admin");
+  const bare =
+    pathname?.startsWith("/admin") ||
+    pathname?.startsWith("/join") ||
+    pathname?.startsWith("/p/") ||
+    pathname?.startsWith("/studio") ||
+    pathname?.startsWith("/login") ||
+    pathname?.startsWith("/signup");
 
-  if (isAdmin) return <>{children}</>;
+  if (bare) return <>{children}</>;
 
   return (
     <>

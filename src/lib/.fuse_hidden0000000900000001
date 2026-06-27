@@ -111,7 +111,7 @@ export async function availableSlots(
   const { data: bks } = await supabase.rpc("public_busy_times", { p_stylist: stylistId, p_date: dateISO });
 
   const buffer = 10;
-  const busy: { start: Date; end: Date }[] = (bks ?? []).map((b: any) => ({ start: new Date(b.starts_at), end: new Date(b.ends_at) }));
+  const busy = (bks ?? []).map((b: any) => ({ start: new Date(b.starts_at), end: new Date(b.ends_at) }));
 
   const dayStart = new Date(`${dateISO}T${(wh[0] as any).start_time}`);
   const dayEnd = new Date(`${dateISO}T${(wh[0] as any).end_time}`);
@@ -588,7 +588,6 @@ export async function getMyBusiness(
     .from("businesses")
     .select("id, provider_profiles(display_name, slug)")
     .eq("owner_id", ownerId)
-    .eq("account_type", "individual")
     .limit(1)
     .maybeSingle();
   if (error) throw error;
