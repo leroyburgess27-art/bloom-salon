@@ -1,50 +1,55 @@
 import Link from "next/link";
-import { servicesByCategory } from "@/lib/db";
-import { zar, duration } from "@/lib/format";
+import { trendingProviders, listServiceCategories } from "@/lib/db";
+import Discover from "@/components/Discover";
+import { BRAND } from "@/lib/brand";
 
-export const revalidate = 0; // always fetch fresh catalogue
+export const revalidate = 0; // always fetch fresh providers
 
-export default async function CatalogPage() {
-  const groups = await servicesByCategory();
+export default async function HomePage() {
+  const [providers, categories] = await Promise.all([
+    trendingProviders(),
+    listServiceCategories(),
+  ]);
 
   return (
-    <div>
-      <section className="mb-8 rounded-2xl bg-brand-light p-6">
-        <h1 className="text-2xl font-bold text-brand-dark">Book your appointment</h1>
-        <p className="mt-1 text-gray-700">
-          Browse our hair &amp; nail services, choose your stylist and a time that suits you.
-        </p>
+    <div className="space-y-12">
+      <Discover providers={providers} categories={categories} />
+
+      {/* For providers */}
+      <section className="overflow-hidden rounded-3xl bg-brand-dark px-6 py-10 text-white sm:px-10">
+        <div className="max-w-xl">
+          <h2 className="text-2xl font-bold">Are you a hair, nail or beauty pro?</h2>
+          <p className="mt-2 text-white/80">
+            Get your own booking page in minutes. Keep 100% of what you earn, own your client list, and
+            let clients book you directly — no commission, ever.
+          </p>
+          <Link
+            href="/join"
+            className="mt-5 inline-block rounded-xl bg-white px-6 py-3 font-semibold text-brand-dark hover:bg-gray-100"
+          >
+            Create your free page
+          </Link>
+        </div>
       </section>
 
-      {groups.map((group) => (
-        <section key={group.category} className="mb-10">
-          <h2 className="mb-4 text-xl font-semibold">{group.category}</h2>
-          <div className="grid gap-4 sm:grid-cols-2">
-            {group.items.map((s) => (
-              <div
-                key={s.id}
-                className="flex flex-col justify-between rounded-xl border bg-white p-5 shadow-sm"
-              >
-                <div>
-                  <h3 className="font-semibold">{s.name}</h3>
-                  <p className="mt-1 text-sm text-gray-600">{s.description}</p>
-                </div>
-                <div className="mt-4 flex items-center justify-between">
-                  <div className="text-sm text-gray-500">
-                    {duration(s.durationMinutes)} · {zar(s.price)}
-                  </div>
-                  <Link
-                    href={`/book/${s.id}`}
-                    className="rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-dark"
-                  >
-                    Book
-                  </Link>
-                </div>
-              </div>
-            ))}
+      {/* Footer */}
+      <footer className="border-t pt-8 text-sm text-gray-500">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <div className="text-lg font-extrabold text-brand">{BRAND}</div>
+            <p className="mt-1 max-w-xs">
+              Book independent, mobile self-care providers across Cape Town.
+            </p>
           </div>
-        </section>
-      ))}
+          <nav className="flex flex-wrap gap-x-6 gap-y-2">
+            <Link href="/join" className="hover:text-brand">For providers</Link>
+            <Link href="/login" className="hover:text-brand">Provider log in</Link>
+          </nav>
+        </div>
+        <p className="mt-6 text-xs text-gray-400">
+          © {new Date().getFullYear()} {BRAND}. Your data is handled with consent — POPIA-aligned.
+        </p>
+      </footer>
     </div>
   );
 }

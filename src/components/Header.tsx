@@ -2,22 +2,20 @@
 
 import Link from "next/link";
 import { useCart } from "@/lib/cart";
-import { getBusiness } from "@/lib/repo";
+import { BRAND } from "@/lib/brand";
 
 export default function Header() {
   const { items } = useCart();
-  const business = getBusiness();
 
   return (
     <header className="sticky top-0 z-10 border-b bg-white">
       <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
-        <Link href="/" className="flex flex-col leading-tight">
-          <span className="text-lg font-bold text-brand">{business.name}</span>
-          <span className="text-xs text-gray-500">{business.address}</span>
+        <Link href="/" className="text-lg font-extrabold tracking-tight text-brand">
+          {BRAND}
         </Link>
         <div className="flex items-center gap-4">
-          <Link href="/admin" className="text-sm text-gray-500 hover:text-brand">
-            Admin
+          <Link href="/join" className="text-sm font-medium text-gray-600 hover:text-brand">
+            For providers
           </Link>
           <Link
             href="/cart"

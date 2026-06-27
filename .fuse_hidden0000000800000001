@@ -52,14 +52,8 @@ Goal: get our real mobile hairdresser using it live, learn from real usage + dis
   "Treatments"-style. Provider selects from the list + sets their own price/duration. Cleaner data,
   better discovery filters, no duplicates. *(Raised 24 Jun; do after the test.)*
 - 🅿️ **Onboarding UX pass** — review/redesign each `/join` step. *(Raised 24 Jun.)*
-- 🔄 **UX redesign (page-by-page)** — from a Figma direction, reskin every flow starting at the
-  main page. *(Started 27 Jun.)* Done: **home** reframed as a client discovery surface — gradient
-  hero, provider/treatment + area search, treatment-category filter, trending-providers grid.
-  Brand text routed through a single `BRAND` constant (`src/lib/brand.ts`) so the parked name is a
-  1-line swap. Added **Brows** + **Makeup** treatment categories.
-- ⬜ **Provider search** — home search filters listed providers client-side now; promote to a
-  server-side search/`/discover` page (name, treatment, area) as provider count grows.
-- ✅ **Auth** (Supabase email/password) + owner-scoped RLS — DONE & verified 27 Jun (anon blocked from client data; providers see only their own). Studio is session-based; /admin auth-gated.
+- ⬜ **Auth** (Supabase Auth) + tenant-scoped RLS — REQUIRED before onboarding a 2nd provider
+  (studio is currently URL-keyed, RLS is permissive). Security hardening.
 - ⬜ **Reviews capture** — client leaves a rating after a completed booking; show on profile.
 - ⬜ **Studio editing** — edit services, availability, profile, photo upload (Supabase Storage).
 - ⬜ **Deposits / real payments** — PayFast integration behind the existing PaymentProvider
@@ -74,10 +68,6 @@ Goal: get our real mobile hairdresser using it live, learn from real usage + dis
 - ⬜ **WhatsApp reminders live** — Meta WhatsApp Business API (per-message utility cost).
 
 ## Phase 4 — Scale / "business mode" ⬜
-- ⬜ **Trending / featured providers as a tier perk** — the home "Trending providers" slots become a
-  paid placement (pro-tier boost / featured), ranked fairly (rating + returning clients) for free
-  tiers. *(Idea raised 27 Jun during home redesign — keep non-extractive: placement is opt-in, not
-  pay-to-be-seen-at-all.)*
 - ⬜ Subscription billing (flat fee) + plan gating (free vs pro).
 - ⬜ Multi-staff salon tier (Bloom) + per-stylist profiles/reviews.
 - ⬜ Onboard more salons + providers; expansion beyond Cape Town.

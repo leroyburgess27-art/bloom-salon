@@ -512,6 +512,84 @@ export async function getProviderBySlug(slug: string): Promise<ProviderPublic | 
 
 
 // ===========================================================================
+// DISCOVERY (public home: trending / listed providers)
+// ===========================================================================
+export interface TrendingProvider {
+  businessId: string;
+  slug: string;
+  displayName: string;
+  headline: string | null;
+  baseArea: string | null;
+  photoUrl: string | null;
+  acceptsMobile: boolean;
+  verificationLevel: "none" | "profile" | "id";
+  categories: string[];
+  ratingAvg: number;
+  ratingCount: number;
+  returningClients: number;
+}
+
+export async function trendingProviders(limit = 12): Promise<TrendingProvider[]> {
+  if (!supabaseEnabled || !supabase) return [];
+
+  const { data: profiles, error } = await supabase
+    .from("provider_profiles")
+    .select(
+      "business_id, slug, display_name, headline, base_area, photo_url, accepts_mobile, verification_level",
+    )
+    .eq("active", true)
+    .eq("is_listed", true);
+  if (error) throw error;
+  const rows = (profiles ?? []) as any[];
+  if (rows.length === 0) return [];
+
+  const ids = rows.map((r) => r.business_id);
+  const [{ data: stats }, { data: links }, { data: cats }] = await Promise.all([
+    supabase.from("provider_stats").select("*").in("business_id", ids),
+    supabase.from("provider_categories").select("business_id, category_id").in("business_id", ids),
+    supabase.from("service_categories").select("id, name"),
+  ]);
+
+  const statById = new Map((stats ?? []).map((s: any) => [s.business_id, s]));
+  const catNameById = new Map((cats ?? []).map((c: any) => [c.id, c.name as string]));
+  const catsByBiz = new Map<string, string[]>();
+  for (const l of (links ?? []) as any[]) {
+    const name = catNameById.get(l.category_id);
+    if (!name) continue;
+    const arr = catsByBiz.get(l.business_id) ?? [];
+    arr.push(name);
+    catsByBiz.set(l.business_id, arr);
+  }
+
+  const list: TrendingProvider[] = rows.map((r) => {
+    const st = statById.get(r.business_id) as any;
+    return {
+      businessId: r.business_id,
+      slug: r.slug,
+      displayName: r.display_name,
+      headline: r.headline,
+      baseArea: r.base_area,
+      photoUrl: r.photo_url,
+      acceptsMobile: r.accepts_mobile,
+      verificationLevel: r.verification_level,
+      categories: catsByBiz.get(r.business_id) ?? [],
+      ratingAvg: st ? Number(st.rating_avg) : 0,
+      ratingCount: st ? Number(st.rating_count) : 0,
+      returningClients: st ? Number(st.returning_clients) : 0,
+    };
+  });
+
+  list.sort(
+    (a, b) =>
+      b.ratingAvg - a.ratingAvg ||
+      b.returningClients - a.returningClients ||
+      b.ratingCount - a.ratingCount ||
+      a.displayName.localeCompare(b.displayName),
+  );
+  return list.slice(0, limit);
+}
+
+// ===========================================================================
 // PROVIDER STUDIO (their own management view, scoped by business id)
 // ===========================================================================
 export async function getProviderById(
