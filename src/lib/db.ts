@@ -672,6 +672,7 @@ export async function getProviderById(
 
 export interface StudioBooking {
   id: string;
+  clientId: string | null;
   title: string;
   clientName: string;
   clientPhone: string | null;
@@ -690,7 +691,7 @@ export async function studioBookingsForDate(
   if (!supabaseEnabled || !supabase) return [];
   const { data, error } = await supabase
     .from("bookings")
-    .select("id, starts_at, ends_at, status, service_mode, address, services(name, price), clients(name, phone)")
+    .select("id, client_id, starts_at, ends_at, status, service_mode, address, services(name, price), clients(name, phone)")
     .eq("business_id", businessId)
     .neq("status", "cancelled")
     .gte("starts_at", `${dateISO}T00:00:00`)
@@ -699,6 +700,7 @@ export async function studioBookingsForDate(
   if (error) throw error;
   return (data ?? []).map((r: any) => ({
     id: r.id,
+    clientId: r.client_id ?? null,
     title: r.services?.name ?? "Booking",
     clientName: r.clients?.name ?? "Client",
     clientPhone: r.clients?.phone ?? null,
@@ -719,15 +721,17 @@ export async function studioUpcomingBookings(
   const nowISO = new Date().toISOString();
   const { data, error } = await supabase
     .from("bookings")
-    .select("id, starts_at, ends_at, status, service_mode, address, services(name, price), clients(name, phone)")
+    .select("id, client_id, starts_at, ends_at, status, service_mode, address, services(name, price), clients(name, phone)")
     .eq("business_id", businessId)
     .neq("status", "cancelled")
     .gte("starts_at", nowISO)
+    .neq("status", "completed")
     .order("starts_at")
     .limit(limit);
   if (error) throw error;
   return (data ?? []).map((r: any) => ({
     id: r.id,
+    clientId: r.client_id ?? null,
     title: r.services?.name ?? "Booking",
     clientName: r.clients?.name ?? "Client",
     clientPhone: r.clients?.phone ?? null,
@@ -748,7 +752,7 @@ export async function studioBookingsForRange(
   if (!supabaseEnabled || !supabase) return [];
   const { data, error } = await supabase
     .from("bookings")
-    .select("id, starts_at, ends_at, status, service_mode, address, services(name, price), clients(name, phone)")
+    .select("id, client_id, starts_at, ends_at, status, service_mode, address, services(name, price), clients(name, phone)")
     .eq("business_id", businessId)
     .neq("status", "cancelled")
     .gte("starts_at", `${startISO}T00:00:00`)
@@ -757,6 +761,7 @@ export async function studioBookingsForRange(
   if (error) throw error;
   return (data ?? []).map((r: any) => ({
     id: r.id,
+    clientId: r.client_id ?? null,
     title: r.services?.name ?? "Booking",
     clientName: r.clients?.name ?? "Client",
     clientPhone: r.clients?.phone ?? null,
@@ -767,6 +772,52 @@ export async function studioBookingsForRange(
     serviceMode: r.service_mode ?? "onsite",
     address: r.address ?? null,
   }));
+}
+
+export async function studioCompletedBookings(
+  businessId: string,
+  limit = 30,
+): Promise<StudioBooking[]> {
+  if (!supabaseEnabled || !supabase) return [];
+  const { data, error } = await supabase
+    .from("bookings")
+    .select("id, client_id, starts_at, ends_at, status, service_mode, address, services(name, price), clients(name, phone)")
+    .eq("business_id", businessId)
+    .eq("status", "completed")
+    .order("starts_at", { ascending: false })
+    .limit(limit);
+  if (error) throw error;
+  return (data ?? []).map((r: any) => ({
+    id: r.id,
+    clientId: r.client_id ?? null,
+    title: r.services?.name ?? "Booking",
+    clientName: r.clients?.name ?? "Client",
+    clientPhone: r.clients?.phone ?? null,
+    start: new Date(r.starts_at),
+    end: new Date(r.ends_at),
+    status: (r.status as StudioBooking["status"]) ?? "confirmed",
+    price: r.services?.price ? Number(r.services.price) : 0,
+    serviceMode: r.service_mode ?? "onsite",
+    address: r.address ?? null,
+  }));
+}
+
+// How many (non-cancelled) bookings each client has with this business — for
+// returning-client recognition. Keyed by client_id.
+export async function clientVisitCounts(businessId: string): Promise<Record<string, number>> {
+  if (!supabaseEnabled || !supabase) return {};
+  const { data, error } = await supabase
+    .from("bookings")
+    .select("client_id")
+    .eq("business_id", businessId)
+    .neq("status", "cancelled");
+  if (error) throw error;
+  const counts: Record<string, number> = {};
+  for (const r of (data ?? []) as any[]) {
+    if (!r.client_id) continue;
+    counts[r.client_id] = (counts[r.client_id] ?? 0) + 1;
+  }
+  return counts;
 }
 
 export async function markBookingCompleted(id: string): Promise<void> {

@@ -8,6 +8,8 @@ import {
   studioBookingsForDate,
   studioUpcomingBookings,
   studioBookingsForRange,
+  studioCompletedBookings,
+  clientVisitCounts,
   cancelBooking,
   markBookingCompleted,
   type StudioBooking,
@@ -56,6 +58,8 @@ export default function StudioPage() {
   const [bookings, setBookings] = useState<StudioBooking[]>([]);
   const [upcoming, setUpcoming] = useState<StudioBooking[]>([]);
   const [weekBookings, setWeekBookings] = useState<StudioBooking[]>([]);
+  const [history, setHistory] = useState<StudioBooking[]>([]);
+  const [visitCounts, setVisitCounts] = useState<Record<string, number>>({});
   const [view, setView] = useState<"day" | "week">("day");
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -80,16 +84,20 @@ export default function StudioPage() {
     if (!biz) return;
     setLoading(true);
     const days = weekDays(date);
-    const [day, up, wk] = await Promise.all([
+    const [day, up, wk, hist, counts] = await Promise.all([
       studioBookingsForDate(biz.businessId, date),
       studioUpcomingBookings(biz.businessId, 5),
       view === "week"
         ? studioBookingsForRange(biz.businessId, isoDate(days[0]), isoDate(days[6]))
         : Promise.resolve<StudioBooking[]>([]),
+      studioCompletedBookings(biz.businessId, 30),
+      clientVisitCounts(biz.businessId),
     ]);
     setBookings(day);
     setUpcoming(up);
     setWeekBookings(wk);
+    setHistory(hist);
+    setVisitCounts(counts);
     setLoading(false);
   }, [biz, date, view]);
 
@@ -137,6 +145,8 @@ export default function StudioPage() {
     const text = `Hi ${b.clientName}, thanks for booking with ${biz!.displayName}! If you have a moment, please leave a quick review: ${url}`;
     return `https://wa.me/${waNumber(b.clientPhone ?? "")}?text=${encodeURIComponent(text)}`;
   }
+
+  const isReturning = (b: StudioBooking) => (b.clientId ? visitCounts[b.clientId] ?? 0 : 0) >= 2;
 
   const revenue = bookings.reduce((sum, b) => sum + b.price, 0);
   const completedCount = bookings.filter((b) => b.status === "completed").length;
@@ -218,6 +228,7 @@ export default function StudioPage() {
                         </span>{" "}
                         · {timeLabel(b.start)} · {b.title}
                         <span className="text-gray-500"> — {b.clientName}</span>
+                        {isReturning(b) && <span className="ml-1 text-xs font-medium text-brand-dark">↩</span>}
                       </span>
                       <span className="shrink-0 text-gray-400">→</span>
                     </button>
@@ -271,9 +282,16 @@ export default function StudioPage() {
                           <div className={`font-semibold ${done ? "text-gray-400 line-through" : ""}`}>
                             {timeLabel(b.start)}–{timeLabel(b.end)} · {b.title}
                           </div>
-                          <div className="mt-1 text-sm text-gray-600">
-                            {b.clientName}
-                            {b.clientPhone ? ` · ${b.clientPhone}` : ""}
+                          <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-gray-600">
+                            <span>
+                              {b.clientName}
+                              {b.clientPhone ? ` · ${b.clientPhone}` : ""}
+                            </span>
+                            {isReturning(b) && (
+                              <span className="rounded-full bg-brand-light px-2 py-0.5 text-xs font-medium text-brand-dark">
+                                ↩ Returning client
+                              </span>
+                            )}
                           </div>
                           {b.serviceMode === "mobile" && (
                             <div className="mt-1 text-sm text-brand-dark">🚗 Mobile{b.address ? ` — ${b.address}` : ""}</div>
@@ -329,6 +347,33 @@ export default function StudioPage() {
               </div>
             )}
           </>
+        )}
+
+        {/* Booking history (completed) */}
+        {history.length > 0 && (
+          <div className="mt-8">
+            <h2 className="mb-3 text-lg font-bold">Booking history</h2>
+            <div className="overflow-hidden rounded-2xl border bg-white">
+              {history.map((b) => (
+                <div key={b.id} className="flex items-center justify-between gap-3 border-b px-4 py-3 text-sm last:border-b-0">
+                  <div className="min-w-0">
+                    <div className="font-medium">
+                      {b.start.toLocaleDateString("en-ZA", { day: "numeric", month: "short", year: "numeric" })} · {b.title}
+                    </div>
+                    <div className="mt-0.5 flex flex-wrap items-center gap-2 text-gray-500">
+                      <span>{b.clientName}</span>
+                      {isReturning(b) && (
+                        <span className="rounded-full bg-brand-light px-2 py-0.5 text-xs font-medium text-brand-dark">
+                          ↩ Returning client
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="shrink-0 font-medium text-gray-700">{zar(b.price)}</div>
+                </div>
+              ))}
+            </div>
+          </div>
         )}
       </div>
     </div>
