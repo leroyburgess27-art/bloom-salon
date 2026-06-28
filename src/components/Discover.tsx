@@ -27,7 +27,7 @@ const CAPE_TOWN_AREAS = [
   "Wynberg", "Plumstead", "Bishopscourt", "Constantia", "Tokai", "Bergvliet",
   "Camps Bay", "Clifton", "Bantry Bay", "Hout Bay", "Llandudno",
   "Muizenberg", "Kalk Bay", "Fish Hoek", "Noordhoek", "Simon's Town",
-  "Pinelands", "Athlone", "Lansdowne", "Grassy Park", "Milnerton",
+  "Pinelands", "Athlone", "Lansdowne", "Grassy Park", "Retreat", "Heathfield", "Lotus River", "Strandfontein", "Milnerton",
   "Table View", "Bloubergstrand", "Century City", "Parklands",
   "Bellville", "Durbanville", "Parow", "Goodwood", "Brackenfell", "Kuils River",
   "Khayelitsha", "Mitchells Plain", "Gugulethu", "Langa",
