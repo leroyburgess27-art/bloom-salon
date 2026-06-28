@@ -261,12 +261,17 @@ export default function Discover({
               Get your own booking page in minutes. Keep 100% of what you earn, own your client list, and let
               clients book you directly.
             </p>
-            <Link
-              href="/join"
-              className="mt-5 inline-block rounded-xl bg-white px-6 py-3 font-semibold text-brand-dark hover:bg-gray-100"
-            >
-              Become a Service Provider
-            </Link>
+            <div className="mt-5 flex flex-wrap items-center gap-4">
+              <Link
+                href="/join"
+                className="inline-block rounded-xl bg-white px-6 py-3 font-semibold text-brand-dark hover:bg-gray-100"
+              >
+                Become a Service Provider
+              </Link>
+              <Link href="/for-providers" className="text-sm font-medium text-white/90 underline hover:text-white">
+                See how it works →
+              </Link>
+            </div>
           </div>
           <ul className="space-y-3 text-sm text-white/90">
             <li className="flex items-center gap-2"><span className="text-green-300">✓</span> Keep 100% — 0% commission, ever</li>

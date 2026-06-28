@@ -25,6 +25,7 @@ export default async function HomePage() {
             </p>
           </div>
           <nav className="flex flex-wrap gap-x-6 gap-y-2">
+            <Link href="/for-providers" className="hover:text-brand">How it works</Link>
             <Link href="/join" className="hover:text-brand">Become a Service Provider</Link>
             <Link href="/login" className="hover:text-brand">Provider log in</Link>
           </nav>
