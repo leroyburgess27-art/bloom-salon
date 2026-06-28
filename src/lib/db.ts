@@ -458,6 +458,7 @@ export interface ProviderPublic {
   stylistId: string | null;
   servicesByCategory: { category: string; items: Service[] }[];
   stats: { ratingAvg: number; ratingCount: number; returningClients: number };
+  reviews: { rating: number; comment: string | null; createdAt: string }[];
 }
 
 export async function getProviderBySlug(slug: string): Promise<ProviderPublic | null> {
@@ -474,7 +475,7 @@ export async function getProviderBySlug(slug: string): Promise<ProviderPublic | 
 
   const businessId = (profile as any).business_id as string;
 
-  const [{ data: svc }, { data: sty }, { data: stat }] = await Promise.all([
+  const [{ data: svc }, { data: sty }, { data: stat }, { data: revs }] = await Promise.all([
     supabase
       .from("services")
       .select("*")
@@ -489,6 +490,13 @@ export async function getProviderBySlug(slug: string): Promise<ProviderPublic | 
       .eq("active", true)
       .limit(1),
     supabase.from("provider_stats").select("*").eq("business_id", businessId).maybeSingle(),
+    supabase
+      .from("reviews")
+      .select("rating, comment, created_at")
+      .eq("business_id", businessId)
+      .eq("status", "published")
+      .order("created_at", { ascending: false })
+      .limit(20),
   ]);
 
   const items = (svc ?? []).map(mapService);
@@ -517,7 +525,48 @@ export async function getProviderBySlug(slug: string): Promise<ProviderPublic | 
       ratingCount: stat ? Number((stat as any).rating_count) : 0,
       returningClients: stat ? Number((stat as any).returning_clients) : 0,
     },
+    reviews: (revs ?? []).map((r: any) => ({
+      rating: Number(r.rating),
+      comment: r.comment ?? null,
+      createdAt: r.created_at,
+    })),
   };
+}
+
+// ===========================================================================
+// REVIEWS (client leaves a rating after a completed booking)
+// ===========================================================================
+export interface ReviewContext {
+  providerName: string;
+  providerSlug: string;
+  serviceName: string | null;
+  status: string;
+  alreadyReviewed: boolean;
+}
+
+export async function getReviewContext(bookingId: string): Promise<ReviewContext | null> {
+  if (!supabaseEnabled || !supabase) return null;
+  const { data, error } = await supabase.rpc("review_context", { p_booking: bookingId });
+  if (error) throw error;
+  const r = (data ?? [])[0];
+  if (!r) return null;
+  return {
+    providerName: r.provider_name,
+    providerSlug: r.provider_slug,
+    serviceName: r.service_name,
+    status: r.status,
+    alreadyReviewed: r.already_reviewed,
+  };
+}
+
+export async function submitReview(bookingId: string, rating: number, comment: string): Promise<void> {
+  if (!supabaseEnabled || !supabase) throw new Error("Database not configured");
+  const { error } = await supabase.rpc("submit_review", {
+    p_booking: bookingId,
+    p_rating: rating,
+    p_comment: comment,
+  });
+  if (error) throw new Error(error.message);
 }
 
 

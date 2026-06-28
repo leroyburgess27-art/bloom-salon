@@ -10,6 +10,7 @@ export default function Chrome({ children }: { children: React.ReactNode }) {
     pathname?.startsWith("/join") ||
     pathname?.startsWith("/p/") ||
     pathname?.startsWith("/studio") ||
+    pathname?.startsWith("/review/") ||
     pathname?.startsWith("/login") ||
     pathname?.startsWith("/signup");
 

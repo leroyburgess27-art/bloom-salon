@@ -80,7 +80,7 @@ Goal: get our real mobile hairdresser using it live, learn from real usage + dis
 - ⬜ **Provider search** — home search filters listed providers client-side now; promote to a
   server-side search/`/discover` page (name, treatment, area) as provider count grows.
 - ✅ **Auth** (Supabase email/password) + owner-scoped RLS — DONE & verified 27 Jun (anon blocked from client data; providers see only their own). Studio is session-based; /admin auth-gated.
-- ⬜ **Reviews capture** — client leaves a rating after a completed booking; show on profile.
+- ✅ **Reviews capture** (28 Jun) — client rates after a completed booking at `/review/[bookingId]` (`submit_review` + `review_context` SECURITY-DEFINER fns; one earned review per booking). Shown on `/p`; provider gets an '⭐ Ask for review' WhatsApp link on completed bookings in studio; feeds `provider_stats` + Verified ladder.
 - ⬜ **Studio editing** — edit services, availability, profile, photo upload (Supabase Storage).
 - ⬜ **Deposits / real payments** — PayFast integration behind the existing PaymentProvider
   interface; deposit-to-secure-slot for no-show protection (provider keeps it).
@@ -143,10 +143,4 @@ Goal: get our real mobile hairdresser using it live, learn from real usage + dis
 - **Verified tick** is aspirational, transparent criteria — a goal providers climb toward.
 
 ## Small backlog / nice-to-haves
-- Studio: ✅ week view (in Free, 27 Jun — Day/Week toggle, week agenda); search/filter bookings, no-show marking.
-- Public page: portfolio photos, share buttons.
-- Reminder: configurable lead time; SMS option.
-- Accessibility + full mobile polish pass.
-
----
-*Keep this current. When we say "note that for later", it goes here.*
+- Studio: ✅ week view (in Free, 27 Jun — Day/Week toggle, week agenda); search/filter 

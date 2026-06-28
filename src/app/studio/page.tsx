@@ -131,6 +131,13 @@ export default function StudioPage() {
     return `https://wa.me/${waNumber(b.clientPhone ?? "")}?text=${encodeURIComponent(text)}`;
   }
 
+  function waReviewHref(b: StudioBooking): string {
+    const origin = typeof window !== "undefined" ? window.location.origin : "";
+    const url = `${origin}/review/${b.id}`;
+    const text = `Hi ${b.clientName}, thanks for booking with ${biz!.displayName}! If you have a moment, please leave a quick review: ${url}`;
+    return `https://wa.me/${waNumber(b.clientPhone ?? "")}?text=${encodeURIComponent(text)}`;
+  }
+
   const revenue = bookings.reduce((sum, b) => sum + b.price, 0);
   const completedCount = bookings.filter((b) => b.status === "completed").length;
   const upcomingOther = upcoming.filter((b) => b.start.toISOString().slice(0, 10) !== date);
@@ -250,67 +257,77 @@ export default function StudioPage() {
           <>
             <p className="mb-4 text-sm text-gray-500">{dateLabel}</p>
             {bookings.length === 0 ? (
-          <div className="rounded-2xl border border-dashed bg-white p-8 text-center text-sm text-gray-500">
-            No bookings this day. Share your link to get booked.
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {bookings.map((b) => {
-              const done = b.status === "completed";
-              return (
-                <div key={b.id} className={`rounded-2xl border p-4 ${done ? "bg-gray-50" : "bg-white"}`}>
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <div className={`font-semibold ${done ? "text-gray-400 line-through" : ""}`}>
-                        {timeLabel(b.start)}–{timeLabel(b.end)} · {b.title}
+              <div className="rounded-2xl border border-dashed bg-white p-8 text-center text-sm text-gray-500">
+                No bookings this day. Share your link to get booked.
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {bookings.map((b) => {
+                  const done = b.status === "completed";
+                  return (
+                    <div key={b.id} className={`rounded-2xl border p-4 ${done ? "bg-gray-50" : "bg-white"}`}>
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <div className={`font-semibold ${done ? "text-gray-400 line-through" : ""}`}>
+                            {timeLabel(b.start)}–{timeLabel(b.end)} · {b.title}
+                          </div>
+                          <div className="mt-1 text-sm text-gray-600">
+                            {b.clientName}
+                            {b.clientPhone ? ` · ${b.clientPhone}` : ""}
+                          </div>
+                          {b.serviceMode === "mobile" && (
+                            <div className="mt-1 text-sm text-brand-dark">🚗 Mobile{b.address ? ` — ${b.address}` : ""}</div>
+                          )}
+                        </div>
+                        <div className="shrink-0 text-right">
+                          <div className="font-semibold">{zar(b.price)}</div>
+                          <span
+                            className={`text-xs ${
+                              done ? "text-gray-500" : b.status === "pending" ? "text-amber-600" : "text-green-600"
+                            }`}
+                          >
+                            {done ? "Completed" : b.status === "pending" ? "Awaiting confirmation" : "Confirmed"}
+                          </span>
+                        </div>
                       </div>
-                      <div className="mt-1 text-sm text-gray-600">
-                        {b.clientName}
-                        {b.clientPhone ? ` · ${b.clientPhone}` : ""}
-                      </div>
-                      {b.serviceMode === "mobile" && (
-                        <div className="mt-1 text-sm text-brand-dark">🚗 Mobile{b.address ? ` — ${b.address}` : ""}</div>
-                      )}
-                    </div>
-                    <div className="shrink-0 text-right">
-                      <div className="font-semibold">{zar(b.price)}</div>
-                      <span
-                        className={`text-xs ${
-                          done ? "text-gray-500" : b.status === "pending" ? "text-amber-600" : "text-green-600"
-                        }`}
-                      >
-                        {done ? "Completed" : b.status === "pending" ? "Awaiting confirmation" : "Confirmed"}
-                      </span>
-                    </div>
-                  </div>
 
-                  <div className="mt-3 flex flex-wrap items-center gap-3">
-                    {b.clientPhone && (
-                      <a
-                        href={waHref(b)}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1.5 rounded-lg bg-[#25D366] px-3 py-1.5 text-xs font-medium text-white hover:bg-[#1da851]"
-                      >
-                        💬 WhatsApp client
-                      </a>
-                    )}
-                    {!done && (
-                      <div className="ml-auto flex items-center gap-4">
-                        <button onClick={() => doComplete(b.id)} className="text-xs font-medium text-green-600 hover:underline">
-                          Mark done
-                        </button>
-                        <button onClick={() => doCancel(b.id)} className="text-xs text-red-500 hover:underline">
-                          Cancel
-                        </button>
+                      <div className="mt-3 flex flex-wrap items-center gap-3">
+                        {b.clientPhone && (
+                          <a
+                            href={waHref(b)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1.5 rounded-lg bg-[#25D366] px-3 py-1.5 text-xs font-medium text-white hover:bg-[#1da851]"
+                          >
+                            💬 WhatsApp client
+                          </a>
+                        )}
+                        {done && b.clientPhone && (
+                          <a
+                            href={waReviewHref(b)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1.5 rounded-lg bg-amber-400 px-3 py-1.5 text-xs font-medium text-amber-900 hover:bg-amber-300"
+                          >
+                            ⭐ Ask for review
+                          </a>
+                        )}
+                        {!done && (
+                          <div className="ml-auto flex items-center gap-4">
+                            <button onClick={() => doComplete(b.id)} className="text-xs font-medium text-green-600 hover:underline">
+                              Mark done
+                            </button>
+                            <button onClick={() => doCancel(b.id)} className="text-xs text-red-500 hover:underline">
+                              Cancel
+                            </button>
+                          </div>
+                        )}
                       </div>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </>
         )}
       </div>

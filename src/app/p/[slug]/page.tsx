@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { getProviderBySlug, availableSlots, createOrder, type ProviderPublic } from "@/lib/db";
 import type { Service, Slot } from "@/lib/types";
@@ -46,98 +46,122 @@ export default function ProviderPage({ params }: { params: { slug: string } }) {
       </nav>
 
       <div className="mx-auto max-w-xl px-4 py-6">
-      {/* Profile header */}
-      <div className="overflow-hidden rounded-2xl border bg-white">
-        <div className="h-20 bg-gradient-to-r from-violet-200 via-purple-100 to-pink-100" />
-        <div className="px-4 pb-4">
-          <div className="-mt-10 flex items-end justify-between">
-            {provider.photoUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={provider.photoUrl}
-                alt={provider.displayName}
-                className="h-20 w-20 rounded-full border-4 border-white object-cover"
-              />
-            ) : (
-              <div className="flex h-20 w-20 items-center justify-center rounded-full border-4 border-white bg-brand-light text-2xl font-bold text-brand">
-                {initials}
-              </div>
-            )}
-            {verifiedLabel && (
-              <span className="mb-1 rounded-full bg-blue-600 px-2.5 py-1 text-xs font-medium text-white">
-                ✓ {verifiedLabel}
-              </span>
-            )}
-          </div>
-          <h1 className="mt-3 text-xl font-bold">{provider.displayName}</h1>
-          {provider.headline && <p className="text-sm text-gray-600">{provider.headline}</p>}
-          <div className="mt-2 flex flex-wrap gap-2 text-xs">
-            {provider.acceptsMobile && (
-              <span className="rounded-full bg-brand-light px-2.5 py-1 font-medium text-brand-dark">🚗 Comes to you</span>
-            )}
-            <span className="rounded-full bg-gray-100 px-2.5 py-1 text-gray-600">Serves {servesLabel}</span>
-          </div>
-          {provider.baseArea && (
-            <p className="mt-2 text-xs text-gray-500">
-              📍 {provider.acceptsMobile ? "Travels to" : "Based in"}: {provider.baseArea}
-            </p>
-          )}
-        </div>
-      </div>
-
-      {/* Trust signals */}
-      <div className="mt-4 grid grid-cols-3 gap-3 text-center text-sm">
-        <Stat
-          label="Rating"
-          value={provider.stats.ratingCount ? `★ ${provider.stats.ratingAvg.toFixed(1)}` : "New"}
-          sub={provider.stats.ratingCount ? `${provider.stats.ratingCount} reviews` : "no reviews yet"}
-        />
-        <Stat label="Returning" value={String(provider.stats.returningClients)} sub="clients rebook" />
-        <Stat label="Status" value={verifiedLabel ?? "Unverified"} sub={provider.verificationLevel === "id" ? "ID checked" : "profile"} />
-      </div>
-
-      {provider.bio && <p className="mt-4 whitespace-pre-line text-sm text-gray-700">{provider.bio}</p>}
-
-      {provider.goodToKnow && (
-        <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-3">
-          <div className="text-xs font-semibold uppercase tracking-wide text-amber-700">Good to know</div>
-          <p className="mt-1 text-sm text-amber-900">{provider.goodToKnow}</p>
-        </div>
-      )}
-
-      {/* Services */}
-      <h2 className="mt-8 mb-3 text-lg font-semibold">Book a service</h2>
-      {provider.servicesByCategory.length === 0 && (
-        <p className="text-sm text-gray-500">No services listed yet.</p>
-      )}
-      {provider.servicesByCategory.map((group) => (
-        <div key={group.category} className="mb-5">
-          <h3 className="mb-2 text-sm font-semibold uppercase tracking-wide text-gray-400">{group.category}</h3>
-          <div className="space-y-2">
-            {group.items.map((s) => (
-              <button
-                key={s.id}
-                onClick={() => setSelected(s)}
-                className="flex w-full items-center justify-between rounded-xl border bg-white p-4 text-left hover:border-brand"
-              >
-                <div>
-                  <div className="font-medium">{s.name}</div>
-                  <div className="text-xs text-gray-500">{duration(s.durationMinutes)} · {zar(s.price)}</div>
+        {/* Profile header */}
+        <div className="overflow-hidden rounded-2xl border bg-white">
+          <div className="h-20 bg-gradient-to-r from-violet-200 via-purple-100 to-pink-100" />
+          <div className="px-4 pb-4">
+            <div className="-mt-10 flex items-end justify-between">
+              {provider.photoUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={provider.photoUrl}
+                  alt={provider.displayName}
+                  className="h-20 w-20 rounded-full border-4 border-white object-cover"
+                />
+              ) : (
+                <div className="flex h-20 w-20 items-center justify-center rounded-full border-4 border-white bg-brand-light text-2xl font-bold text-brand">
+                  {initials}
                 </div>
-                <span className="rounded-lg bg-brand px-3 py-1.5 text-sm font-medium text-white">Book</span>
-              </button>
-            ))}
+              )}
+              {verifiedLabel && (
+                <span className="mb-1 rounded-full bg-blue-600 px-2.5 py-1 text-xs font-medium text-white">
+                  ✓ {verifiedLabel}
+                </span>
+              )}
+            </div>
+            <h1 className="mt-3 text-xl font-bold">{provider.displayName}</h1>
+            {provider.headline && <p className="text-sm text-gray-600">{provider.headline}</p>}
+            <div className="mt-2 flex flex-wrap gap-2 text-xs">
+              {provider.acceptsMobile && (
+                <span className="rounded-full bg-brand-light px-2.5 py-1 font-medium text-brand-dark">🚗 Comes to you</span>
+              )}
+              <span className="rounded-full bg-gray-100 px-2.5 py-1 text-gray-600">Serves {servesLabel}</span>
+            </div>
+            {provider.baseArea && (
+              <p className="mt-2 text-xs text-gray-500">
+                📍 {provider.acceptsMobile ? "Travels to" : "Based in"}: {provider.baseArea}
+              </p>
+            )}
           </div>
         </div>
-      ))}
 
-      {selected && (
-        <BookingModal
-          provider={provider}
-          service={selected}
-          onClose={() => setSelected(null)}
-        />
-      )}
+        {/* Trust signals */}
+        <div className="mt-4 grid grid-cols-3 gap-3 text-center text-sm">
+          <Stat
+            label="Rating"
+            value={provider.stats.ratingCount ? `★ ${provider.stats.ratingAvg.toFixed(1)}` : "New"}
+            sub={provider.stats.ratingCount ? `${provider.stats.ratingCount} reviews` : "no reviews yet"}
+          />
+          <Stat label="Returning" value={String(provider.stats.returningClients)} sub="clients rebook" />
+          <Stat label="Status" value={verifiedLabel ?? "Unverified"} sub={provider.verificationLevel === "id" ? "ID checked" : "profile"} />
+        </div>
+
+        {provider.bio && <p className="mt-4 whitespace-pre-line text-sm text-gray-700">{provider.bio}</p>}
+
+        {provider.goodToKnow && (
+          <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-3">
+            <div className="text-xs font-semibold uppercase tracking-wide text-amber-700">Good to know</div>
+            <p className="mt-1 text-sm text-amber-900">{provider.goodToKnow}</p>
+          </div>
+        )}
+
+        {/* Services */}
+        <h2 className="mt-8 mb-3 text-lg font-semibold">Book a service</h2>
+        {provider.servicesByCategory.length === 0 && (
+          <p className="text-sm text-gray-500">No services listed yet.</p>
+        )}
+        {provider.servicesByCategory.map((group) => (
+          <div key={group.category} className="mb-5">
+            <h3 className="mb-2 text-sm font-semibold uppercase tracking-wide text-gray-400">{group.category}</h3>
+            <div className="space-y-2">
+              {group.items.map((s) => (
+                <button
+                  key={s.id}
+                  onClick={() => setSelected(s)}
+                  className="flex w-full items-center justify-between rounded-xl border bg-white p-4 text-left hover:border-brand"
+                >
+                  <div>
+                    <div className="font-medium">{s.name}</div>
+                    <div className="text-xs text-gray-500">{duration(s.durationMinutes)} · {zar(s.price)}</div>
+                  </div>
+                  <span className="rounded-lg bg-brand px-3 py-1.5 text-sm font-medium text-white">Book</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        ))}
+
+        {provider.reviews.length > 0 && (
+          <div className="mt-8">
+            <h2 className="mb-3 text-lg font-semibold">
+              Reviews <span className="text-sm font-normal text-gray-400">({provider.reviews.length})</span>
+            </h2>
+            <div className="space-y-3">
+              {provider.reviews.map((r, i) => (
+                <div key={i} className="rounded-xl border bg-white p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="text-amber-400">
+                      {"★".repeat(r.rating)}
+                      <span className="text-gray-200">{"★".repeat(5 - r.rating)}</span>
+                    </div>
+                    <div className="text-xs text-gray-400">
+                      {new Date(r.createdAt).toLocaleDateString("en-ZA", { day: "numeric", month: "short", year: "numeric" })}
+                    </div>
+                  </div>
+                  {r.comment && <p className="mt-2 text-sm text-gray-700">{r.comment}</p>}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {selected && (
+          <BookingModal
+            provider={provider}
+            service={selected}
+            onClose={() => setSelected(null)}
+          />
+        )}
       </div>
     </>
   );
