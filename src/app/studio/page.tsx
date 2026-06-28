@@ -146,7 +146,10 @@ export default function StudioPage() {
         <div className="mx-auto flex max-w-2xl flex-wrap items-center gap-2 px-4 py-3">
           <span className="text-lg font-bold">{biz.displayName}</span>
           <span className="rounded-full bg-white/15 px-2 py-0.5 text-xs">Studio</span>
-          <a href={`/p/${biz.slug}`} className="ml-auto text-sm text-white/80 underline hover:text-white">
+          <a href="/" className="ml-auto text-sm text-white/80 hover:text-white">
+            Home
+          </a>
+          <a href={`/p/${biz.slug}`} className="text-sm text-white/80 underline hover:text-white">
             View public page →
           </a>
           <button
