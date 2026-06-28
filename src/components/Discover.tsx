@@ -20,6 +20,20 @@ const CATEGORY_EMOJI: Record<string, string> = {
   massage: "💆",
 };
 
+const CAPE_TOWN_AREAS = [
+  "Sea Point", "Green Point", "Mouille Point", "City Bowl (CBD)", "Gardens", "Tamboerskloof",
+  "Vredehoek", "Oranjezicht", "Bo-Kaap", "Woodstock", "Salt River", "Observatory",
+  "Mowbray", "Rosebank", "Rondebosch", "Newlands", "Claremont", "Kenilworth",
+  "Wynberg", "Plumstead", "Bishopscourt", "Constantia", "Tokai", "Bergvliet",
+  "Camps Bay", "Clifton", "Bantry Bay", "Hout Bay", "Llandudno",
+  "Muizenberg", "Kalk Bay", "Fish Hoek", "Noordhoek", "Simon's Town",
+  "Pinelands", "Athlone", "Lansdowne", "Grassy Park", "Milnerton",
+  "Table View", "Bloubergstrand", "Century City", "Parklands",
+  "Bellville", "Durbanville", "Parow", "Goodwood", "Brackenfell", "Kuils River",
+  "Khayelitsha", "Mitchells Plain", "Gugulethu", "Langa",
+  "Atlantic Seaboard", "Southern Suburbs", "Northern Suburbs",
+];
+
 type Sort = "trending" | "rating" | "name";
 
 function emojiFor(slug: string, name: string): string {
@@ -45,6 +59,7 @@ export default function Discover({
   const [area, setArea] = useState("");
   const [treatments, setTreatments] = useState<string[]>([]);
   const [treatOpen, setTreatOpen] = useState(false);
+  const [areaOpen, setAreaOpen] = useState(false);
   const [mobileOnly, setMobileOnly] = useState(false);
   const [sort, setSort] = useState<Sort>("trending");
 
@@ -56,6 +71,14 @@ export default function Discover({
   }
 
   const isFiltering = Boolean(query.trim() || area.trim() || treatments.length || mobileOnly);
+
+  const areaMatches = useMemo(() => {
+    const q = area.trim().toLowerCase();
+    const base = q ? CAPE_TOWN_AREAS.filter((s) => s.toLowerCase().includes(q)) : CAPE_TOWN_AREAS;
+    // hide if the input already exactly equals the only match
+    if (base.length === 1 && base[0].toLowerCase() === q) return [];
+    return base.slice(0, 8);
+  }, [area]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -152,15 +175,40 @@ export default function Discover({
 
               <div className="hidden w-px self-stretch bg-gray-200 sm:block" />
 
-              {/* Area */}
-              <div className="flex flex-1 items-center gap-2 px-3">
+              {/* Area with suggestions */}
+              <div className="relative flex flex-1 items-center gap-2 px-3">
                 <span className="text-gray-400">📍</span>
                 <input
                   value={area}
-                  onChange={(e) => setArea(e.target.value)}
+                  onChange={(e) => {
+                    setArea(e.target.value);
+                    setAreaOpen(true);
+                  }}
+                  onFocus={() => setAreaOpen(true)}
                   placeholder="Area (e.g. Sea Point)"
                   className="w-full bg-transparent py-2 text-sm outline-none placeholder:text-gray-400"
                 />
+                {areaOpen && areaMatches.length > 0 && (
+                  <>
+                    <div className="fixed inset-0 z-30" onClick={() => setAreaOpen(false)} />
+                    <div className="absolute left-0 top-full z-40 mt-1 max-h-64 w-64 overflow-y-auto rounded-xl border bg-white p-1 text-left shadow-lg">
+                      {areaMatches.map((s) => (
+                        <button
+                          key={s}
+                          type="button"
+                          onClick={() => {
+                            setArea(s);
+                            setAreaOpen(false);
+                          }}
+                          className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm hover:bg-gray-50"
+                        >
+                          <span className="text-gray-400">📍</span>
+                          <span>{s}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </>
+                )}
               </div>
 
               <button
