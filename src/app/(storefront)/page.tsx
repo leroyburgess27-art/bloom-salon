@@ -27,7 +27,7 @@ export default async function HomePage() {
             href="/join"
             className="mt-5 inline-block rounded-xl bg-white px-6 py-3 font-semibold text-brand-dark hover:bg-gray-100"
           >
-            Create your free page
+            Become a Service Provider
           </Link>
         </div>
       </section>
@@ -42,7 +42,7 @@ export default async function HomePage() {
             </p>
           </div>
           <nav className="flex flex-wrap gap-x-6 gap-y-2">
-            <Link href="/join" className="hover:text-brand">For providers</Link>
+            <Link href="/join" className="hover:text-brand">Become a Service Provider</Link>
             <Link href="/login" className="hover:text-brand">Provider log in</Link>
           </nav>
         </div>

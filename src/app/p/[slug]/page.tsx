@@ -25,42 +25,71 @@ export default function ProviderPage({ params }: { params: { slug: string } }) {
     return <div className="p-10 text-center text-gray-500">Provider not found.</div>;
 
   const initials = provider.displayName.charAt(0).toUpperCase();
+  const verifiedLabel =
+    provider.verificationLevel === "id" ? "ID verified" : provider.verificationLevel === "profile" ? "Verified" : null;
+  const servesLabel =
+    provider.clientele === "all" ? "Everyone" : provider.clientele === "men" ? "Men" : "Women";
 
   return (
     <div className="mx-auto max-w-xl px-4 py-6">
       {/* Profile header */}
-      <div className="flex items-start gap-4">
-        {provider.photoUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={provider.photoUrl} alt={provider.displayName} className="h-20 w-20 rounded-full object-cover" />
-        ) : (
-          <div className="flex h-20 w-20 items-center justify-center rounded-full bg-brand-light text-2xl font-bold text-brand">
-            {initials}
-          </div>
-        )}
-        <div className="flex-1">
-          <div className="flex items-center gap-2">
-            <h1 className="text-xl font-bold">{provider.displayName}</h1>
-            {provider.verificationLevel !== "none" && (
-              <span title="Verified" className="text-brand">✔</span>
+      <div className="overflow-hidden rounded-2xl border bg-white">
+        <div className="h-20 bg-gradient-to-r from-violet-200 via-purple-100 to-pink-100" />
+        <div className="px-4 pb-4">
+          <div className="-mt-10 flex items-end justify-between">
+            {provider.photoUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={provider.photoUrl}
+                alt={provider.displayName}
+                className="h-20 w-20 rounded-full border-4 border-white object-cover"
+              />
+            ) : (
+              <div className="flex h-20 w-20 items-center justify-center rounded-full border-4 border-white bg-brand-light text-2xl font-bold text-brand">
+                {initials}
+              </div>
+            )}
+            {verifiedLabel && (
+              <span className="mb-1 rounded-full bg-blue-600 px-2.5 py-1 text-xs font-medium text-white">
+                ✓ {verifiedLabel}
+              </span>
             )}
           </div>
+          <h1 className="mt-3 text-xl font-bold">{provider.displayName}</h1>
           {provider.headline && <p className="text-sm text-gray-600">{provider.headline}</p>}
-          <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs text-gray-500">
-            {provider.baseArea && <span>📍 {provider.baseArea}</span>}
-            {provider.acceptsMobile && <span className="rounded-full bg-brand-light px-2 py-0.5 text-brand-dark">Mobile</span>}
+          <div className="mt-2 flex flex-wrap gap-2 text-xs">
+            {provider.acceptsMobile && (
+              <span className="rounded-full bg-brand-light px-2.5 py-1 font-medium text-brand-dark">🚗 Comes to you</span>
+            )}
+            <span className="rounded-full bg-gray-100 px-2.5 py-1 text-gray-600">Serves {servesLabel}</span>
           </div>
+          {provider.baseArea && (
+            <p className="mt-2 text-xs text-gray-500">
+              📍 {provider.acceptsMobile ? "Travels to" : "Based in"}: {provider.baseArea}
+            </p>
+          )}
         </div>
       </div>
 
       {/* Trust signals */}
-      <div className="mt-4 flex gap-3 text-center text-sm">
-        <Stat label="Rating" value={provider.stats.ratingCount ? `★ ${provider.stats.ratingAvg}` : "New"} sub={provider.stats.ratingCount ? `${provider.stats.ratingCount} reviews` : "no reviews yet"} />
-        <Stat label="Returning clients" value={String(provider.stats.returningClients)} sub="who rebook" />
-        <Stat label="Status" value={provider.verificationLevel === "none" ? "Unverified" : "Verified"} sub="profile" />
+      <div className="mt-4 grid grid-cols-3 gap-3 text-center text-sm">
+        <Stat
+          label="Rating"
+          value={provider.stats.ratingCount ? `★ ${provider.stats.ratingAvg.toFixed(1)}` : "New"}
+          sub={provider.stats.ratingCount ? `${provider.stats.ratingCount} reviews` : "no reviews yet"}
+        />
+        <Stat label="Returning" value={String(provider.stats.returningClients)} sub="clients rebook" />
+        <Stat label="Status" value={verifiedLabel ?? "Unverified"} sub={provider.verificationLevel === "id" ? "ID checked" : "profile"} />
       </div>
 
       {provider.bio && <p className="mt-4 whitespace-pre-line text-sm text-gray-700">{provider.bio}</p>}
+
+      {provider.goodToKnow && (
+        <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-3">
+          <div className="text-xs font-semibold uppercase tracking-wide text-amber-700">Good to know</div>
+          <p className="mt-1 text-sm text-amber-900">{provider.goodToKnow}</p>
+        </div>
+      )}
 
       {/* Services */}
       <h2 className="mt-8 mb-3 text-lg font-semibold">Book a service</h2>

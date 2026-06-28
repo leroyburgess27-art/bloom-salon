@@ -50,13 +50,31 @@ Goal: get our real mobile hairdresser using it live, learn from real usage + dis
 - 🅿️ **Standardised service catalogue + tagging** — replace provider free-text services with a
   curated master list grouped by category ("Hair & styling", "Nails", "Hair removal", …), Fresha
   "Treatments"-style. Provider selects from the list + sets their own price/duration. Cleaner data,
-  better discovery filters, no duplicates. *(Raised 24 Jun; do after the test.)*
+  better discovery filters, no duplicates. *(Raised 24 Jun; do after the test.)* This is ALSO how we
+  handle "I do waxing but not certain areas" — boundaries are expressed by which catalogue items are
+  toggled on (absence = not offered), NOT a free-text "not available for" list. *(Decided 27 Jun.)*
+  Interim: providers free-text only the services they offer; an optional moderated **"Good to know"**
+  note (`provider_profiles.good_to_know`) covers soft caveats. Intimate services (e.g. intimate
+  waxing) + in-home mobile → later gate behind ID-verified + a consent/policy.
 - 🅿️ **Onboarding UX pass** — review/redesign each `/join` step. *(Raised 24 Jun.)*
 - 🔄 **UX redesign (page-by-page)** — from a Figma direction, reskin every flow starting at the
   main page. *(Started 27 Jun.)* Done: **home** reframed as a client discovery surface — gradient
   hero, provider/treatment + area search, treatment-category filter, trending-providers grid.
   Brand text routed through a single `BRAND` constant (`src/lib/brand.ts`) so the parked name is a
   1-line swap. Added **Brows** + **Makeup** treatment categories.
+  - `/join` onboarding (in progress): **account-first** (email+password before the wizard) + login
+    link; individual-only (removed "business name"); **headline auto-composed** from categories +
+    mobile + first service area (no free text); **Service areas** as a typed list (map/geo deferred);
+    **"Who do you serve?"** Men/Women/Everyone (`provider_profiles.clientele`); expanded treatment
+    categories: Hair, Nails, Brows, Makeup, Lashes, Waxing, Braiding, Barber, Skincare, Facials,
+    Shaving. TODO: optional light headline personalisation (controlled "specialty" pick) — later;
+    real photo upload (Storage); profanity blocklist on name/bio.
+  - **Travel/buffer time between appointments** — SP-controlled selector (None/15/30/45 min, default
+    None) on `/join` step 4, stored in `business_settings.default_buffer_minutes`. ⬜ ENFORCEMENT
+    PENDING: make `availableSlots` leave that gap around bookings (expand busy intervals by the
+    buffer) + surface the buffer to the public booking page (business_settings isn't publicly
+    readable post-RLS-lockdown, so route it via the `public_busy_times` RPC or provider_profiles).
+    Build/behaviour-test when sandbox is back. *(Decided 27 Jun.)*
 - ⬜ **Provider search** — home search filters listed providers client-side now; promote to a
   server-side search/`/discover` page (name, treatment, area) as provider count grows.
 - ✅ **Auth** (Supabase email/password) + owner-scoped RLS — DONE & verified 27 Jun (anon blocked from client data; providers see only their own). Studio is session-based; /admin auth-gated.
@@ -70,6 +88,12 @@ Goal: get our real mobile hairdresser using it live, learn from real usage + dis
   Verified via outsourced KYC (POPIA-safe: store only a result token, never ID documents).
 - ⬜ **Directory / discovery** — browse providers by category + area, filter by Verified/rating.
   Launch only once provider density exists (avoid marketplace cold-start).
+- ⬜ **Content moderation / safe listing** — reduce free-text risk: headline is auto-composed from
+  categories (done 27 Jun, no typos/abuse); name + bio have length caps + (to add) a basic profanity
+  blocklist on submit. New providers default `is_listed=false`, so they never appear in public
+  discovery/trending until reviewed — gate public listing on the Verified step. Their own shared
+  `/p/[slug]` link still works immediately. Non-extractive: work right away, enter the marketplace
+  after a light check.
 - ⬜ **Marketing to own clients** — rebooking nudges / campaigns to the consented client list.
 - ⬜ **WhatsApp reminders live** — Meta WhatsApp Business API (per-message utility cost).
 
@@ -89,7 +113,30 @@ Goal: get our real mobile hairdresser using it live, learn from real usage + dis
 - **Payments:** PayFast is the SA gateway target (Stripe not viable in SA). Simulated until Phase 2.
 - **No commission, ever** — flat fee only. Messaging/processing costs are pass-through, only-when-used.
 - **POPIA:** marketing only with consent; never store ID documents (use KYC provider).
-- **Pricing (to validate w/ test user):** individual tier very low (~R49–R99?), free starter; anchor = Booklink R79.
+- **Pricing & packaging (decided 27 Jun; price validate w/ pilot):** Freemium — generous **Free
+  (Starter, R0 forever)** + one **Pro at ~R99/mo** (target). NO paywall in onboarding (finish free,
+  upgrade later via a Plans screen; payment simulated now → PayFast recurring later). Compete on
+  **outcomes + moat (marketplace discovery + reputation data)**, NOT feature count — explicitly
+  rejected "out-number Booklink." Booklink (Tora Technologies, Cape Town) is the anchor: Free + **Pro
+  R79** (unlimited services/bookings, payments via Yoco/Paystack/PayFast/iKhokha, WhatsApp+email
+  reminders, Google Calendar, multi-service, multiple slots/day, group sessions, Meet links,
+  storefront branding, remove-branding, up to 5 team + team permissions, priority support; also
+  field-level POPIA encryption + Rebill SARS invoicing). We match the **solo-relevant** subset and add
+  what they structurally lack. Fresha = cheaper $ but up to 20% new-client commission; Booksy ≈ R399+/mo.
+  - **Free (R0):** shareable booking page, unlimited bookings, keep 100% + own clients, all
+    treatments/services, **service areas + "comes to you" + travel buffer**, **public trust profile
+    (reviews, returning-client count, Profile-Verified badge)**, basic studio; listed in discovery
+    once Verified.
+  - **Pro (~R99):** everything in Free + payments/deposits (no-show protection), WhatsApp + email
+    reminders, **featured/priority discovery placement**, **"On my way" + arrival alerts** (signature),
+    **provider safety check-in / share-with-trusted-contact** (signature), ID-Verified fast-track,
+    remove-branding + storefront colours, analytics, re-booking campaigns; parity later: Google
+    Calendar sync, multi-service, multiple slots/day, group sessions, Meet links.
+  - **Excluded from individual product** (future *business* tier): team members, team permissions.
+  - Signature mobile features chosen from market research (SweepSouth en-route alerts; Urban Company
+    tracking/safety; mobile-hairdresser travel fees): **safety check-in + "on my way"**. Travel/call-out
+    fee + tips + 1-tap rebook = backlog (not committed). Positioning: "Everything Booklink does for solo
+    providers — plus get discovered by new clients and stay safe on mobile jobs — flat R99, 0% commission."
 - **Discovery model:** tools + presence first (provider brings own clients); directory is Phase 3.
 - **Verified tick** is aspirational, transparent criteria — a goal providers climb toward.
 

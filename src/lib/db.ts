@@ -302,6 +302,8 @@ export interface ProviderInput {
   photoUrl?: string;
   baseArea?: string;
   acceptsMobile: boolean;
+  clientele?: "men" | "women" | "all";
+  goodToKnow?: string;
   email?: string;
   phone?: string;
   categorySlugs: string[];
@@ -309,6 +311,7 @@ export interface ProviderInput {
   weekdays: number[];
   startTime: string;
   endTime: string;
+  bufferMinutes?: number;
 }
 
 function slugify(name: string): string {
@@ -351,7 +354,7 @@ export async function createProvider(
     mobile_enabled: input.acceptsMobile,
     payment_mode: "upfront",
     payment_methods: ["cash", "card", "qr", "eft"],
-    default_buffer_minutes: 10,
+    default_buffer_minutes: input.bufferMinutes ?? 0,
   });
   if (setErr) throw setErr;
 
@@ -378,6 +381,8 @@ export async function createProvider(
     photo_url: input.photoUrl ?? null,
     accepts_mobile: input.acceptsMobile,
     base_area: input.baseArea ?? null,
+    clientele: input.clientele ?? "all",
+    good_to_know: input.goodToKnow ?? null,
     verification_level: "none",
     is_listed: false,
     active: true,
@@ -446,6 +451,8 @@ export interface ProviderPublic {
   photoUrl: string | null;
   baseArea: string | null;
   acceptsMobile: boolean;
+  clientele: "men" | "women" | "all";
+  goodToKnow: string | null;
   verificationLevel: "none" | "profile" | "id";
   stylistId: string | null;
   servicesByCategory: { category: string; items: Service[] }[];
@@ -499,6 +506,8 @@ export async function getProviderBySlug(slug: string): Promise<ProviderPublic | 
     photoUrl: (profile as any).photo_url,
     baseArea: (profile as any).base_area,
     acceptsMobile: (profile as any).accepts_mobile,
+    clientele: ((profile as any).clientele ?? "all") as "men" | "women" | "all",
+    goodToKnow: (profile as any).good_to_know ?? null,
     verificationLevel: (profile as any).verification_level,
     stylistId: sty && sty.length ? (sty[0] as any).id : null,
     servicesByCategory,

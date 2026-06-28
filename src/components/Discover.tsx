@@ -10,9 +10,14 @@ const CATEGORY_EMOJI: Record<string, string> = {
   nails: "💅",
   brows: "✨",
   makeup: "💄",
-  massage: "💆",
+  lashes: "👁️",
+  waxing: "🍯",
+  braiding: "🪢",
   barber: "💈",
-  skincare: "🧖",
+  skincare: "🧴",
+  facials: "🧖",
+  shaving: "🪒",
+  massage: "💆",
 };
 
 type Sort = "trending" | "rating" | "name";
@@ -70,6 +75,17 @@ export default function Discover({
     setMobileOnly(false);
   }
 
+  function quickSearch(term: string) {
+    setQuery(term);
+    setActiveCategory(null);
+    setTimeout(
+      () => document.getElementById("results")?.scrollIntoView({ behavior: "smooth" }),
+      0,
+    );
+  }
+
+  const POPULAR = ["Braids", "Natural hair", "Gel", "Brows", "Makeup"];
+
   return (
     <div className="space-y-12">
       {/* Hero */}
@@ -110,6 +126,19 @@ export default function Discover({
             >
               Search
             </button>
+          </div>
+
+          <div className="mt-4 flex flex-wrap items-center gap-2">
+            <span className="text-sm text-gray-600">Popular:</span>
+            {POPULAR.map((term) => (
+              <button
+                key={term}
+                onClick={() => quickSearch(term)}
+                className="rounded-full bg-white/70 px-3 py-1 text-sm text-gray-700 hover:bg-white"
+              >
+                {term}
+              </button>
+            ))}
           </div>
 
           <p className="mt-4 text-sm text-gray-600">
