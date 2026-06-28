@@ -7,6 +7,7 @@ import {
   getMyBusiness,
   studioBookingsForDate,
   studioUpcomingBookings,
+  studioBookingsForRange,
   cancelBooking,
   markBookingCompleted,
   type StudioBooking,
@@ -29,6 +30,23 @@ function timeLabel(d: Date): string {
   return d.toLocaleTimeString("en-ZA", { hour: "2-digit", minute: "2-digit" });
 }
 
+// Local YYYY-MM-DD (avoids UTC off-by-one from toISOString).
+function isoDate(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+// The 7 days (Mon→Sun) of the week containing dateISO.
+function weekDays(dateISO: string): Date[] {
+  const d = new Date(`${dateISO}T00:00:00`);
+  const monday = new Date(d);
+  monday.setDate(d.getDate() - ((d.getDay() + 6) % 7));
+  return Array.from({ length: 7 }, (_, i) => {
+    const x = new Date(monday);
+    x.setDate(monday.getDate() + i);
+    return x;
+  });
+}
+
 export default function StudioPage() {
   const router = useRouter();
   const { user, loading: authLoading, signOut } = useAuth();
@@ -37,6 +55,8 @@ export default function StudioPage() {
   const [date, setDate] = useState(todayISO());
   const [bookings, setBookings] = useState<StudioBooking[]>([]);
   const [upcoming, setUpcoming] = useState<StudioBooking[]>([]);
+  const [weekBookings, setWeekBookings] = useState<StudioBooking[]>([]);
+  const [view, setView] = useState<"day" | "week">("day");
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState(false);
 
@@ -59,14 +79,19 @@ export default function StudioPage() {
   const load = useCallback(async () => {
     if (!biz) return;
     setLoading(true);
-    const [day, up] = await Promise.all([
+    const days = weekDays(date);
+    const [day, up, wk] = await Promise.all([
       studioBookingsForDate(biz.businessId, date),
       studioUpcomingBookings(biz.businessId, 5),
+      view === "week"
+        ? studioBookingsForRange(biz.businessId, isoDate(days[0]), isoDate(days[6]))
+        : Promise.resolve<StudioBooking[]>([]),
     ]);
     setBookings(day);
     setUpcoming(up);
+    setWeekBookings(wk);
     setLoading(false);
-  }, [biz, date]);
+  }, [biz, date, view]);
 
   useEffect(() => {
     load();
@@ -193,19 +218,35 @@ export default function StudioPage() {
           </div>
         )}
 
-        {/* Day nav */}
-        <div className="mb-4 flex items-center gap-2">
-          <h1 className="text-lg font-bold">Your day</h1>
+        {/* Nav + view toggle */}
+        <div className="mb-4 flex flex-wrap items-center gap-2">
+          <h1 className="text-lg font-bold">{view === "week" ? "Your week" : "Your day"}</h1>
           {loading && <span className="text-xs text-gray-400">Loading…</span>}
           <div className="ml-auto flex items-center gap-2">
-            <button onClick={() => shiftDay(-1)} className="rounded-lg border bg-white px-3 py-1.5 text-sm">←</button>
+            <div className="flex rounded-lg border bg-white p-0.5 text-sm">
+              <button onClick={() => setView("day")} className={`rounded-md px-2.5 py-1 ${view === "day" ? "bg-brand text-white" : "text-gray-600"}`}>Day</button>
+              <button onClick={() => setView("week")} className={`rounded-md px-2.5 py-1 ${view === "week" ? "bg-brand text-white" : "text-gray-600"}`}>Week</button>
+            </div>
+            <button onClick={() => shiftDay(view === "week" ? -7 : -1)} className="rounded-lg border bg-white px-3 py-1.5 text-sm">←</button>
             <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="rounded-lg border px-3 py-1.5 text-sm" />
-            <button onClick={() => shiftDay(1)} className="rounded-lg border bg-white px-3 py-1.5 text-sm">→</button>
+            <button onClick={() => shiftDay(view === "week" ? 7 : 1)} className="rounded-lg border bg-white px-3 py-1.5 text-sm">→</button>
           </div>
         </div>
-        <p className="mb-4 text-sm text-gray-500">{dateLabel}</p>
 
-        {bookings.length === 0 ? (
+        {view === "week" ? (
+          <WeekGrid
+            days={weekDays(date)}
+            bookings={weekBookings}
+            selected={date}
+            onPick={(iso) => {
+              setDate(iso);
+              setView("day");
+            }}
+          />
+        ) : (
+          <>
+            <p className="mb-4 text-sm text-gray-500">{dateLabel}</p>
+            {bookings.length === 0 ? (
           <div className="rounded-2xl border border-dashed bg-white p-8 text-center text-sm text-gray-500">
             No bookings this day. Share your link to get booked.
           </div>
@@ -267,7 +308,68 @@ export default function StudioPage() {
             })}
           </div>
         )}
+          </>
+        )}
       </div>
+    </div>
+  );
+}
+
+function WeekGrid({
+  days,
+  bookings,
+  selected,
+  onPick,
+}: {
+  days: Date[];
+  bookings: StudioBooking[];
+  selected: string;
+  onPick: (iso: string) => void;
+}) {
+  const todayKey = isoDate(new Date());
+  return (
+    <div className="overflow-hidden rounded-2xl border bg-white">
+      {days.map((d) => {
+        const key = isoDate(d);
+        const dayBookings = bookings.filter((b) => isoDate(b.start) === key);
+        const isToday = key === todayKey;
+        return (
+          <button
+            key={key}
+            onClick={() => onPick(key)}
+            className={`flex w-full items-start gap-3 border-b px-4 py-3 text-left last:border-b-0 hover:bg-gray-50 ${
+              key === selected ? "bg-brand-light/40" : ""
+            }`}
+          >
+            <div className="w-12 shrink-0">
+              <div className="text-xs uppercase text-gray-400">
+                {d.toLocaleDateString("en-ZA", { weekday: "short" })}
+              </div>
+              <div className={`text-lg font-bold ${isToday ? "text-brand" : ""}`}>{d.getDate()}</div>
+            </div>
+            <div className="min-w-0 flex-1">
+              {dayBookings.length === 0 ? (
+                <div className="py-1 text-sm text-gray-300">—</div>
+              ) : (
+                <div className="space-y-1">
+                  {dayBookings.map((b) => (
+                    <div
+                      key={b.id}
+                      className={`truncate rounded-md px-2 py-1 text-xs ${
+                        b.status === "completed"
+                          ? "bg-gray-100 text-gray-400 line-through"
+                          : "bg-brand-light text-brand-dark"
+                      }`}
+                    >
+                      {timeLabel(b.start)} · {b.title} — {b.clientName}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </button>
+        );
+      })}
     </div>
   );
 }

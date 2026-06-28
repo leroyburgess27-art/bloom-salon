@@ -125,7 +125,7 @@ Goal: get our real mobile hairdresser using it live, learn from real usage + dis
   what they structurally lack. Fresha = cheaper $ but up to 20% new-client commission; Booksy ≈ R399+/mo.
   - **Free (R0):** shareable booking page, unlimited bookings, keep 100% + own clients, all
     treatments/services, **service areas + "comes to you" + travel buffer**, **public trust profile
-    (reviews, returning-client count, Profile-Verified badge)**, basic studio; listed in discovery
+    (reviews, returning-client count, Profile-Verified badge)**, basic studio (day + week view); listed in discovery
     once Verified.
   - **Pro (~R99):** everything in Free + payments/deposits (no-show protection), WhatsApp + email
     reminders, **featured/priority discovery placement**, **"On my way" + arrival alerts** (signature),
@@ -141,7 +141,7 @@ Goal: get our real mobile hairdresser using it live, learn from real usage + dis
 - **Verified tick** is aspirational, transparent criteria — a goal providers climb toward.
 
 ## Small backlog / nice-to-haves
-- Studio: week view, search/filter bookings, no-show marking.
+- Studio: ✅ week view (in Free, 27 Jun — Day/Week toggle, week agenda); search/filter bookings, no-show marking.
 - Public page: portfolio photos, share buttons.
 - Reminder: configurable lead time; SMS option.
 - Accessibility + full mobile polish pass.

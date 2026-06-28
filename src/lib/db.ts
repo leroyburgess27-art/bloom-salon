@@ -690,6 +690,35 @@ export async function studioUpcomingBookings(
   }));
 }
 
+export async function studioBookingsForRange(
+  businessId: string,
+  startISO: string,
+  endISO: string,
+): Promise<StudioBooking[]> {
+  if (!supabaseEnabled || !supabase) return [];
+  const { data, error } = await supabase
+    .from("bookings")
+    .select("id, starts_at, ends_at, status, service_mode, address, services(name, price), clients(name, phone)")
+    .eq("business_id", businessId)
+    .neq("status", "cancelled")
+    .gte("starts_at", `${startISO}T00:00:00`)
+    .lte("starts_at", `${endISO}T23:59:59`)
+    .order("starts_at");
+  if (error) throw error;
+  return (data ?? []).map((r: any) => ({
+    id: r.id,
+    title: r.services?.name ?? "Booking",
+    clientName: r.clients?.name ?? "Client",
+    clientPhone: r.clients?.phone ?? null,
+    start: new Date(r.starts_at),
+    end: new Date(r.ends_at),
+    status: (r.status as StudioBooking["status"]) ?? "confirmed",
+    price: r.services?.price ? Number(r.services.price) : 0,
+    serviceMode: r.service_mode ?? "onsite",
+    address: r.address ?? null,
+  }));
+}
+
 export async function markBookingCompleted(id: string): Promise<void> {
   if (!supabaseEnabled || !supabase) return;
   const { error } = await supabase.from("bookings").update({ status: "completed" }).eq("id", id);
