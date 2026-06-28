@@ -1,9 +1,11 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { getProviderBySlug, availableSlots, createOrder, type ProviderPublic } from "@/lib/db";
 import type { Service, Slot } from "@/lib/types";
 import { zar, duration } from "@/lib/format";
+import { BRAND } from "@/lib/brand";
 
 function todayISO() {
   return new Date().toISOString().slice(0, 10);
@@ -31,7 +33,19 @@ export default function ProviderPage({ params }: { params: { slug: string } }) {
     provider.clientele === "all" ? "Everyone" : provider.clientele === "men" ? "Men" : "Women";
 
   return (
-    <div className="mx-auto max-w-xl px-4 py-6">
+    <>
+      <nav className="sticky top-0 z-10 border-b bg-white/90 backdrop-blur">
+        <div className="mx-auto flex max-w-xl items-center justify-between px-4 py-3">
+          <Link href="/" className="text-lg font-extrabold tracking-tight text-brand">
+            {BRAND}
+          </Link>
+          <Link href="/" className="text-sm font-medium text-gray-600 hover:text-brand">
+            Find more pros →
+          </Link>
+        </div>
+      </nav>
+
+      <div className="mx-auto max-w-xl px-4 py-6">
       {/* Profile header */}
       <div className="overflow-hidden rounded-2xl border bg-white">
         <div className="h-20 bg-gradient-to-r from-violet-200 via-purple-100 to-pink-100" />
@@ -124,7 +138,8 @@ export default function ProviderPage({ params }: { params: { slug: string } }) {
           onClose={() => setSelected(null)}
         />
       )}
-    </div>
+      </div>
+    </>
   );
 }
 

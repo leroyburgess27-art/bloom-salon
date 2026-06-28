@@ -6,6 +6,7 @@ import { useAuth } from "@/lib/auth";
 import {
   getMyBusiness,
   studioBookingsForDate,
+  studioUpcomingBookings,
   cancelBooking,
   markBookingCompleted,
   type StudioBooking,
@@ -35,6 +36,7 @@ export default function StudioPage() {
   const [resolving, setResolving] = useState(true);
   const [date, setDate] = useState(todayISO());
   const [bookings, setBookings] = useState<StudioBooking[]>([]);
+  const [upcoming, setUpcoming] = useState<StudioBooking[]>([]);
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState(false);
 
@@ -57,7 +59,12 @@ export default function StudioPage() {
   const load = useCallback(async () => {
     if (!biz) return;
     setLoading(true);
-    setBookings(await studioBookingsForDate(biz.businessId, date));
+    const [day, up] = await Promise.all([
+      studioBookingsForDate(biz.businessId, date),
+      studioUpcomingBookings(biz.businessId, 5),
+    ]);
+    setBookings(day);
+    setUpcoming(up);
     setLoading(false);
   }, [biz, date]);
 
@@ -101,6 +108,7 @@ export default function StudioPage() {
 
   const revenue = bookings.reduce((sum, b) => sum + b.price, 0);
   const completedCount = bookings.filter((b) => b.status === "completed").length;
+  const upcomingOther = upcoming.filter((b) => b.start.toISOString().slice(0, 10) !== date);
   const dateLabel = new Date(`${date}T00:00:00`).toLocaleDateString("en-ZA", {
     weekday: "long",
     day: "numeric",
@@ -155,6 +163,35 @@ export default function StudioPage() {
           <Kpi label="Completed" value={String(completedCount)} />
           <Kpi label="Day total" value={zar(revenue)} />
         </div>
+
+        {/* Upcoming (on other days) */}
+        {upcomingOther.length > 0 && (
+          <div className="mb-6 rounded-2xl border bg-white p-4">
+            <div className="mb-2 text-sm font-semibold">Upcoming bookings</div>
+            <ul className="divide-y">
+              {upcomingOther.map((b) => {
+                const iso = b.start.toISOString().slice(0, 10);
+                return (
+                  <li key={b.id}>
+                    <button
+                      onClick={() => setDate(iso)}
+                      className="flex w-full items-center justify-between gap-3 py-2 text-left text-sm hover:text-brand"
+                    >
+                      <span className="truncate">
+                        <span className="font-medium">
+                          {b.start.toLocaleDateString("en-ZA", { weekday: "short", day: "numeric", month: "short" })}
+                        </span>{" "}
+                        · {timeLabel(b.start)} · {b.title}
+                        <span className="text-gray-500"> — {b.clientName}</span>
+                      </span>
+                      <span className="shrink-0 text-gray-400">→</span>
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        )}
 
         {/* Day nav */}
         <div className="mb-4 flex items-center gap-2">
