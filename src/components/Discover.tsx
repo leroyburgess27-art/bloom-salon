@@ -43,20 +43,28 @@ export default function Discover({
 }) {
   const [query, setQuery] = useState("");
   const [area, setArea] = useState("");
-  const [activeCategory, setActiveCategory] = useState<string | null>(null);
+  const [treatments, setTreatments] = useState<string[]>([]);
+  const [treatOpen, setTreatOpen] = useState(false);
   const [mobileOnly, setMobileOnly] = useState(false);
   const [sort, setSort] = useState<Sort>("trending");
+
+  function toggleTreatment(name: string) {
+    setTreatments((prev) => (prev.includes(name) ? prev.filter((t) => t !== name) : [...prev, name]));
+  }
+  function scrollToResults() {
+    document.getElementById("results")?.scrollIntoView({ behavior: "smooth" });
+  }
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     const a = area.trim().toLowerCase();
     const list = providers.filter((p) => {
-      const hay = `${p.displayName} ${p.headline ?? ""} ${p.categories.join(" ")}`.toLowerCase();
-      const matchesQuery = !q || hay.includes(q);
+      const matchesName =
+        !q || p.displayName.toLowerCase().includes(q) || (p.headline ?? "").toLowerCase().includes(q);
       const matchesArea = !a || (p.baseArea ?? "").toLowerCase().includes(a);
-      const matchesCat = !activeCategory || p.categories.includes(activeCategory);
+      const matchesTreat = treatments.length === 0 || p.categories.some((c) => treatments.includes(c));
       const matchesMobile = !mobileOnly || p.acceptsMobile;
-      return matchesQuery && matchesArea && matchesCat && matchesMobile;
+      return matchesName && matchesArea && matchesTreat && matchesMobile;
     });
     if (sort === "rating") {
       list.sort((a, b) => b.ratingAvg - a.ratingAvg || b.ratingCount - a.ratingCount);
@@ -64,27 +72,16 @@ export default function Discover({
       list.sort((a, b) => a.displayName.localeCompare(b.displayName));
     }
     return list;
-  }, [providers, query, area, activeCategory, mobileOnly, sort]);
+  }, [providers, query, area, treatments, mobileOnly, sort]);
 
-  const isFiltering = Boolean(query.trim() || area.trim() || activeCategory || mobileOnly);
+  const isFiltering = Boolean(query.trim() || area.trim() || treatments.length || mobileOnly);
 
   function clearAll() {
     setQuery("");
     setArea("");
-    setActiveCategory(null);
+    setTreatments([]);
     setMobileOnly(false);
   }
-
-  function quickSearch(term: string) {
-    setQuery(term);
-    setActiveCategory(null);
-    setTimeout(
-      () => document.getElementById("results")?.scrollIntoView({ behavior: "smooth" }),
-      0,
-    );
-  }
-
-  const POPULAR = ["Braids", "Natural hair", "Gel", "Brows", "Makeup"];
 
   return (
     <div className="space-y-12">
@@ -99,46 +96,93 @@ export default function Discover({
           </p>
 
           {/* Search */}
-          <div className="mt-6 flex flex-col gap-2 rounded-2xl bg-white/90 p-2 shadow-sm backdrop-blur sm:flex-row sm:items-center sm:rounded-full">
-            <div className="flex flex-1 items-center gap-2 px-3">
-              <span className="text-gray-400">🔍</span>
-              <input
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="Search a provider or treatment"
-                className="w-full bg-transparent py-2 text-sm outline-none placeholder:text-gray-400"
-              />
-            </div>
-            <div className="hidden w-px self-stretch bg-gray-200 sm:block" />
-            <div className="flex flex-1 items-center gap-2 px-3">
-              <span className="text-gray-400">📍</span>
-              <input
-                value={area}
-                onChange={(e) => setArea(e.target.value)}
-                placeholder="Area (e.g. Sea Point)"
-                className="w-full bg-transparent py-2 text-sm outline-none placeholder:text-gray-400"
-              />
-            </div>
-            <button
-              type="button"
-              onClick={() => document.getElementById("results")?.scrollIntoView({ behavior: "smooth" })}
-              className="rounded-full bg-gray-900 px-6 py-2.5 text-sm font-semibold text-white hover:bg-black"
-            >
-              Search
-            </button>
-          </div>
+          <div className="mt-6 rounded-2xl bg-white/90 p-2 shadow-sm backdrop-blur">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+              {/* Provider search */}
+              <div className="flex flex-1 items-center gap-2 px-3">
+                <span className="text-gray-400">🔍</span>
+                <input
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="Search a provider"
+                  className="w-full bg-transparent py-2 text-sm outline-none placeholder:text-gray-400"
+                />
+              </div>
 
-          <div className="mt-4 flex flex-wrap items-center gap-2">
-            <span className="text-sm text-gray-600">Popular:</span>
-            {POPULAR.map((term) => (
+              <div className="hidden w-px self-stretch bg-gray-200 sm:block" />
+
+              {/* Treatments dropdown */}
+              <div className="relative flex-1">
+                <button
+                  type="button"
+                  onClick={() => setTreatOpen((o) => !o)}
+                  className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm"
+                >
+                  <span className="text-gray-400">🧖</span>
+                  <span className={`flex-1 ${treatments.length ? "text-gray-900" : "text-gray-400"}`}>
+                    {treatments.length ? `${treatments.length} treatment${treatments.length > 1 ? "s" : ""}` : "All treatments"}
+                  </span>
+                  <span className="text-gray-400">▾</span>
+                </button>
+                {treatOpen && (
+                  <>
+                    <div className="fixed inset-0 z-10" onClick={() => setTreatOpen(false)} />
+                    <div className="absolute left-0 z-20 mt-1 max-h-72 w-64 overflow-y-auto rounded-xl border bg-white p-1 text-left shadow-lg">
+                      {categories.map((c) => {
+                        const sel = treatments.includes(c.name);
+                        return (
+                          <button
+                            key={c.slug}
+                            type="button"
+                            onClick={() => toggleTreatment(c.name)}
+                            className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm hover:bg-gray-50 ${
+                              sel ? "bg-brand-light" : ""
+                            }`}
+                          >
+                            <span className="text-lg">{emojiFor(c.slug, c.name)}</span>
+                            <span className="flex-1">{c.name}</span>
+                            {sel && <span className="text-brand">✓</span>}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </>
+                )}
+              </div>
+
+              <div className="hidden w-px self-stretch bg-gray-200 sm:block" />
+
+              {/* Area */}
+              <div className="flex flex-1 items-center gap-2 px-3">
+                <span className="text-gray-400">📍</span>
+                <input
+                  value={area}
+                  onChange={(e) => setArea(e.target.value)}
+                  placeholder="Area (e.g. Sea Point)"
+                  className="w-full bg-transparent py-2 text-sm outline-none placeholder:text-gray-400"
+                />
+              </div>
+
               <button
-                key={term}
-                onClick={() => quickSearch(term)}
-                className="rounded-full bg-white/70 px-3 py-1 text-sm text-gray-700 hover:bg-white"
+                type="button"
+                onClick={scrollToResults}
+                className="rounded-full bg-gray-900 px-6 py-2.5 text-sm font-semibold text-white hover:bg-black"
               >
-                {term}
+                Search
               </button>
-            ))}
+            </div>
+
+            {/* Selected treatment chips */}
+            {treatments.length > 0 && (
+              <div className="mt-2 flex flex-wrap gap-2 px-3 pb-1">
+                {treatments.map((t) => (
+                  <span key={t} className="flex items-center gap-1 rounded-full bg-brand-light px-3 py-1 text-sm text-brand-dark">
+                    {t}
+                    <button onClick={() => toggleTreatment(t)} className="text-brand-dark/60 hover:text-brand-dark">✕</button>
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
 
           <p className="mt-4 text-sm text-gray-600">
@@ -162,18 +206,18 @@ export default function Discover({
         ))}
       </section>
 
-      {/* Categories */}
+      {/* Categories (synced with the treatment filter) */}
       <section>
         <h2 className="mb-4 text-lg font-semibold">Browse treatments</h2>
         <div className="flex gap-5 overflow-x-auto pb-2">
-          <CategoryChip label="All" emoji="🌿" active={!activeCategory} onClick={() => setActiveCategory(null)} />
+          <CategoryChip label="All" emoji="🌿" active={treatments.length === 0} onClick={() => setTreatments([])} />
           {categories.map((c) => (
             <CategoryChip
               key={c.slug}
               label={c.name}
               emoji={emojiFor(c.slug, c.name)}
-              active={activeCategory === c.name}
-              onClick={() => setActiveCategory(activeCategory === c.name ? null : c.name)}
+              active={treatments.includes(c.name)}
+              onClick={() => toggleTreatment(c.name)}
             />
           ))}
         </div>
