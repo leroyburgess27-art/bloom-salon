@@ -41,6 +41,7 @@ Same Supabase backend; `businesses.account_type` = `individual | business`.
 Goal: get our real mobile hairdresser using it live, learn from real usage + discovery chat.
 - 🔄 Mark-completed action
 - ⬜ Deploy provider app so she has a real URL (push current work)
+- 🅿️ **Pre-pilot data housekeeping** *(do just before the pilot)* — wipe all test data: bookings, orders, payments, reviews, the demo/test provider accounts (Thandi/Aisha/Nadia/Leeann SP rows), and dupes. Then keep ONE test **client** named "Leeann"; Jake operates the **admin/provider** account "Leroy". Re-seed only what the live pilot needs (Abby).
 - ⬜ Onboard test user for real (her services/hours/area)
 - ⬜ Let her run it ~1–2 weeks with real clients
 - ⬜ Discovery interview (see `TEST_USER_DISCOVERY.md`) + capture usage feedback
@@ -80,7 +81,7 @@ Goal: get our real mobile hairdresser using it live, learn from real usage + dis
 - ⬜ **Provider search** — home search filters listed providers client-side now; promote to a
   server-side search/`/discover` page (name, treatment, area) as provider count grows.
 - ✅ **Auth** (Supabase email/password) + owner-scoped RLS — DONE & verified 27 Jun (anon blocked from client data; providers see only their own). Studio is session-based; /admin auth-gated.
-- ✅ **Reviews capture** (28 Jun) — client rates after a completed booking at `/review/[bookingId]` (`submit_review` + `review_context` SECURITY-DEFINER fns; one earned review per booking). Shown on `/p`; provider gets an '⭐ Ask for review' WhatsApp link on completed bookings in studio; feeds `provider_stats` + Verified ladder.
+- ✅ **Reviews capture** (28 Jun) — client rates after a completed booking at `/review/[bookingId]` (`submit_review` + `review_context` SECURITY-DEFINER fns; one earned review per booking). Shown on `/p`; provider gets an '⭐ Ask for review' WhatsApp link on completed bookings in studio; feeds `provider_stats` + Verified ladder. Reviewer **name** captured (prefilled from the booking's client) + each review labelled **first-time vs returning client** (computed at submit from the client's completed-booking count); both shown on `/p`.
 - ✅ **Client identity & history** (28 Jun) — clients are de-duplicated by **normalised phone** per business (no client accounts/login — decided to keep guest booking frictionless). `create_public_booking` now reuses the existing client (was creating a new row per booking, which silently broke the returning-clients stat). Added `clients.phone_normalized` + `normalize_phone()`; merged legacy duplicate client rows. Studio now shows a **Booking history** (completed) section and a **'↩ Returning client'** badge (client with ≥2 non-cancelled bookings). Optional passwordless client login (phone OTP) is a possible *later* opt-in, never required.
 - ⬜ **Studio editing** — edit services, availability, profile, photo upload (Supabase Storage).
 - ⬜ **Deposits / real payments** — PayFast integration behind the existing PaymentProvider

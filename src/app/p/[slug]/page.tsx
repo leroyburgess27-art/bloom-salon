@@ -149,6 +149,12 @@ export default function ProviderPage({ params }: { params: { slug: string } }) {
                     </div>
                   </div>
                   {r.comment && <p className="mt-2 text-sm text-gray-700">{r.comment}</p>}
+                  <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-gray-500">
+                    {r.reviewerName && <span className="font-medium text-gray-700">{r.reviewerName.split(" ")[0]}</span>}
+                    <span className="rounded-full bg-gray-100 px-2 py-0.5">
+                      {r.isReturning ? "Returning client" : "First-time client"}
+                    </span>
+                  </div>
                 </div>
               ))}
             </div>

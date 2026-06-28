@@ -20,6 +20,7 @@ export default function ReviewPage({ params }: { params: { bookingId: string } }
   const [rating, setRating] = useState(0);
   const [hover, setHover] = useState(0);
   const [comment, setComment] = useState("");
+  const [name, setName] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -31,12 +32,16 @@ export default function ReviewPage({ params }: { params: { bookingId: string } }
       .finally(() => setLoading(false));
   }, [params.bookingId]);
 
+  useEffect(() => {
+    if (ctx?.clientName) setName((p) => p || ctx.clientName || "");
+  }, [ctx]);
+
   async function submit() {
     if (rating < 1) return;
     setSubmitting(true);
     setError(null);
     try {
-      await submitReview(params.bookingId, rating, comment);
+      await submitReview(params.bookingId, rating, comment, name);
       setDone(true);
     } catch (e: any) {
       setError(e?.message ?? "Couldn't submit your review. Please try again.");
@@ -94,6 +99,17 @@ export default function ReviewPage({ params }: { params: { bookingId: string } }
       <div className="rounded-2xl border bg-white p-6">
         <h1 className="text-lg font-bold">How was your {ctx.serviceName ?? "appointment"}?</h1>
         <p className="mt-1 text-sm text-gray-600">Leave a review for {ctx.providerName}.</p>
+
+        <div className="mt-4">
+          <label className="mb-1 block text-sm font-medium text-gray-700">Your name</label>
+          <input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            maxLength={60}
+            placeholder="Your name"
+            className="w-full rounded-lg border px-3 py-2 text-sm"
+          />
+        </div>
 
         <div className="mt-5 flex justify-center gap-1.5">
           {[1, 2, 3, 4, 5].map((n) => (

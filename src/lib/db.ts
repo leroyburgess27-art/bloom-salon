@@ -458,7 +458,7 @@ export interface ProviderPublic {
   stylistId: string | null;
   servicesByCategory: { category: string; items: Service[] }[];
   stats: { ratingAvg: number; ratingCount: number; returningClients: number };
-  reviews: { rating: number; comment: string | null; createdAt: string }[];
+  reviews: { rating: number; comment: string | null; createdAt: string; reviewerName: string | null; isReturning: boolean }[];
 }
 
 export async function getProviderBySlug(slug: string): Promise<ProviderPublic | null> {
@@ -492,7 +492,7 @@ export async function getProviderBySlug(slug: string): Promise<ProviderPublic | 
     supabase.from("provider_stats").select("*").eq("business_id", businessId).maybeSingle(),
     supabase
       .from("reviews")
-      .select("rating, comment, created_at")
+      .select("rating, comment, created_at, reviewer_name, reviewer_is_returning")
       .eq("business_id", businessId)
       .eq("status", "published")
       .order("created_at", { ascending: false })
@@ -529,6 +529,8 @@ export async function getProviderBySlug(slug: string): Promise<ProviderPublic | 
       rating: Number(r.rating),
       comment: r.comment ?? null,
       createdAt: r.created_at,
+      reviewerName: r.reviewer_name ?? null,
+      isReturning: Boolean(r.reviewer_is_returning),
     })),
   };
 }
@@ -540,6 +542,7 @@ export interface ReviewContext {
   providerName: string;
   providerSlug: string;
   serviceName: string | null;
+  clientName: string | null;
   status: string;
   alreadyReviewed: boolean;
 }
@@ -554,17 +557,19 @@ export async function getReviewContext(bookingId: string): Promise<ReviewContext
     providerName: r.provider_name,
     providerSlug: r.provider_slug,
     serviceName: r.service_name,
+    clientName: r.client_name ?? null,
     status: r.status,
     alreadyReviewed: r.already_reviewed,
   };
 }
 
-export async function submitReview(bookingId: string, rating: number, comment: string): Promise<void> {
+export async function submitReview(bookingId: string, rating: number, comment: string, name: string): Promise<void> {
   if (!supabaseEnabled || !supabase) throw new Error("Database not configured");
   const { error } = await supabase.rpc("submit_review", {
     p_booking: bookingId,
     p_rating: rating,
     p_comment: comment,
+    p_name: name,
   });
   if (error) throw new Error(error.message);
 }
