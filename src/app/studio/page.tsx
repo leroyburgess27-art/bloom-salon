@@ -166,6 +166,9 @@ export default function StudioPage() {
           <a href="/" className="ml-auto text-sm text-white/80 hover:text-white">
             Home
           </a>
+          <a href="/studio/edit" className="text-sm text-white/80 hover:text-white">
+            Edit page
+          </a>
           <a href={`/p/${biz.slug}`} className="text-sm text-white/80 underline hover:text-white">
             View public page →
           </a>

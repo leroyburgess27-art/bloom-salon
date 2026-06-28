@@ -852,3 +852,193 @@ export async function getMyBusiness(
     slug: p?.slug ?? "",
   };
 }
+
+// ===========================================================================
+// STUDIO EDITING (provider edits their own profile / services / availability)
+// ===========================================================================
+export interface ProviderEditService {
+  id: string;
+  name: string;
+  category: string;
+  durationMinutes: number;
+  price: number;
+}
+export interface ProviderEditData {
+  displayName: string;
+  headline: string | null;
+  bio: string | null;
+  photoUrl: string | null;
+  baseArea: string | null;
+  acceptsMobile: boolean;
+  clientele: "men" | "women" | "all";
+  goodToKnow: string | null;
+  bufferMinutes: number;
+  stylistId: string | null;
+  services: ProviderEditService[];
+  weekdays: number[];
+  startTime: string;
+  endTime: string;
+  categoryNames: string[];
+}
+
+export async function getProviderForEdit(businessId: string): Promise<ProviderEditData | null> {
+  if (!supabaseEnabled || !supabase) return null;
+  const [{ data: prof }, { data: settings }, { data: sty }, { data: svc }, { data: cats }] = await Promise.all([
+    supabase.from("provider_profiles").select("*").eq("business_id", businessId).maybeSingle(),
+    supabase.from("business_settings").select("default_buffer_minutes").eq("business_id", businessId).maybeSingle(),
+    supabase.from("stylists").select("id").eq("business_id", businessId).eq("active", true).limit(1),
+    supabase
+      .from("services")
+      .select("id, name, category, duration_minutes, price")
+      .eq("business_id", businessId)
+      .eq("active", true)
+      .order("category")
+      .order("name"),
+    supabase.from("service_categories").select("name").eq("active", true).order("sort_order"),
+  ]);
+  if (!prof) return null;
+  const stylistId = sty && sty.length ? (sty[0] as any).id : null;
+
+  let weekdays: number[] = [];
+  let startTime = "09:00";
+  let endTime = "17:00";
+  if (stylistId) {
+    const { data: wh } = await supabase
+      .from("working_hours")
+      .select("weekday, start_time, end_time")
+      .eq("stylist_id", stylistId)
+      .order("weekday");
+    const rows = (wh ?? []) as any[];
+    weekdays = rows.map((r) => r.weekday);
+    if (rows.length) {
+      startTime = String(rows[0].start_time).slice(0, 5);
+      endTime = String(rows[0].end_time).slice(0, 5);
+    }
+  }
+
+  return {
+    displayName: (prof as any).display_name,
+    headline: (prof as any).headline,
+    bio: (prof as any).bio,
+    photoUrl: (prof as any).photo_url,
+    baseArea: (prof as any).base_area,
+    acceptsMobile: (prof as any).accepts_mobile,
+    clientele: ((prof as any).clientele ?? "all") as "men" | "women" | "all",
+    goodToKnow: (prof as any).good_to_know ?? null,
+    bufferMinutes: settings ? Number((settings as any).default_buffer_minutes ?? 0) : 0,
+    stylistId,
+    services: (svc ?? []).map((s: any) => ({
+      id: s.id,
+      name: s.name,
+      category: s.category,
+      durationMinutes: s.duration_minutes,
+      price: Number(s.price),
+    })),
+    weekdays,
+    startTime,
+    endTime,
+    categoryNames: (cats ?? []).map((c: any) => c.name),
+  };
+}
+
+export async function updateProviderProfile(
+  businessId: string,
+  fields: {
+    bio?: string | null;
+    photoUrl?: string | null;
+    baseArea?: string | null;
+    acceptsMobile: boolean;
+    clientele: "men" | "women" | "all";
+    goodToKnow?: string | null;
+  },
+): Promise<void> {
+  if (!supabaseEnabled || !supabase) return;
+  const { error } = await supabase
+    .from("provider_profiles")
+    .update({
+      bio: fields.bio ?? null,
+      photo_url: fields.photoUrl ?? null,
+      base_area: fields.baseArea ?? null,
+      accepts_mobile: fields.acceptsMobile,
+      clientele: fields.clientele,
+      good_to_know: fields.goodToKnow ?? null,
+    })
+    .eq("business_id", businessId);
+  if (error) throw error;
+  await supabase.from("business_settings").update({ mobile_enabled: fields.acceptsMobile }).eq("business_id", businessId);
+}
+
+export async function updateAvailability(
+  businessId: string,
+  stylistId: string,
+  weekdays: number[],
+  startTime: string,
+  endTime: string,
+  bufferMinutes: number,
+): Promise<void> {
+  if (!supabaseEnabled || !supabase) return;
+  await supabase.from("working_hours").delete().eq("stylist_id", stylistId);
+  if (weekdays.length) {
+    const rows = weekdays.map((weekday) => ({
+      business_id: businessId,
+      stylist_id: stylistId,
+      weekday,
+      start_time: startTime,
+      end_time: endTime,
+    }));
+    const { error } = await supabase.from("working_hours").insert(rows);
+    if (error) throw error;
+  }
+  await supabase.from("business_settings").update({ default_buffer_minutes: bufferMinutes }).eq("business_id", businessId);
+}
+
+export async function saveService(
+  businessId: string,
+  stylistId: string | null,
+  svc: { id?: string; name: string; category: string; durationMinutes: number; price: number; acceptsMobile: boolean },
+): Promise<void> {
+  if (!supabaseEnabled || !supabase) return;
+  if (svc.id) {
+    const { error } = await supabase
+      .from("services")
+      .update({
+        name: svc.name,
+        category: svc.category,
+        duration_minutes: svc.durationMinutes,
+        price: svc.price,
+        available_mobile: svc.acceptsMobile,
+      })
+      .eq("id", svc.id);
+    if (error) throw error;
+  } else {
+    const { data, error } = await supabase
+      .from("services")
+      .insert({
+        business_id: businessId,
+        name: svc.name,
+        description: "",
+        category: svc.category,
+        duration_minutes: svc.durationMinutes,
+        price: svc.price,
+        available_onsite: true,
+        available_mobile: svc.acceptsMobile,
+        active: true,
+      })
+      .select("id")
+      .single();
+    if (error) throw error;
+    if (stylistId && data) {
+      await supabase.from("stylist_services").insert({
+        business_id: businessId,
+        stylist_id: stylistId,
+        service_id: (data as any).id,
+      });
+    }
+  }
+}
+
+export async function removeService(serviceId: string): Promise<void> {
+  if (!supabaseEnabled || !supabase) return;
+  const { error } = await supabase.from("services").update({ active: false }).eq("id", serviceId);
+  if (error) throw error;
+}
