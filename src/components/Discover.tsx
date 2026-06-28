@@ -55,6 +55,8 @@ export default function Discover({
     document.getElementById("results")?.scrollIntoView({ behavior: "smooth" });
   }
 
+  const isFiltering = Boolean(query.trim() || area.trim() || treatments.length || mobileOnly);
+
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     const a = area.trim().toLowerCase();
@@ -74,8 +76,6 @@ export default function Discover({
     return list;
   }, [providers, query, area, treatments, mobileOnly, sort]);
 
-  const isFiltering = Boolean(query.trim() || area.trim() || treatments.length || mobileOnly);
-
   function clearAll() {
     setQuery("");
     setArea("");
@@ -86,7 +86,7 @@ export default function Discover({
   return (
     <div className="space-y-12">
       {/* Hero */}
-      <section className="overflow-hidden rounded-3xl bg-gradient-to-r from-violet-200 via-purple-100 to-pink-100">
+      <section className="rounded-3xl bg-gradient-to-r from-violet-200 via-purple-100 to-pink-100">
         <div className="px-6 py-10 sm:px-10 sm:py-14">
           <h1 className="max-w-2xl text-3xl font-extrabold leading-tight tracking-tight text-gray-900 sm:text-5xl">
             {BRAND_TAGLINE}
@@ -96,7 +96,7 @@ export default function Discover({
           </p>
 
           {/* Search */}
-          <div className="mt-6 rounded-2xl bg-white/90 p-2 shadow-sm backdrop-blur">
+          <div className="relative mt-6 rounded-2xl bg-white/90 p-2 shadow-sm backdrop-blur">
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
               {/* Provider search */}
               <div className="flex flex-1 items-center gap-2 px-3">
@@ -126,8 +126,8 @@ export default function Discover({
                 </button>
                 {treatOpen && (
                   <>
-                    <div className="fixed inset-0 z-10" onClick={() => setTreatOpen(false)} />
-                    <div className="absolute left-0 z-20 mt-1 max-h-72 w-64 overflow-y-auto rounded-xl border bg-white p-1 text-left shadow-lg">
+                    <div className="fixed inset-0 z-30" onClick={() => setTreatOpen(false)} />
+                    <div className="absolute left-0 top-full z-40 mt-1 max-h-72 w-64 overflow-y-auto rounded-xl border bg-white p-1 text-left shadow-lg">
                       {categories.map((c) => {
                         const sel = treatments.includes(c.name);
                         return (
@@ -185,9 +185,7 @@ export default function Discover({
             )}
           </div>
 
-          <p className="mt-4 text-sm text-gray-600">
-            {providers.length} provider{providers.length === 1 ? "" : "s"} ready to book · 0% commission, they keep 100%
-          </p>
+          <p className="mt-4 text-sm text-gray-600">Book direct · 0% commission — providers keep 100%.</p>
         </div>
       </section>
 
@@ -206,94 +204,75 @@ export default function Discover({
         ))}
       </section>
 
-      {/* Categories (synced with the treatment filter) */}
-      <section>
-        <h2 className="mb-4 text-lg font-semibold">Browse treatments</h2>
-        <div className="flex gap-5 overflow-x-auto pb-2">
-          <CategoryChip label="All" emoji="🌿" active={treatments.length === 0} onClick={() => setTreatments([])} />
-          {categories.map((c) => (
-            <CategoryChip
-              key={c.slug}
-              label={c.name}
-              emoji={emojiFor(c.slug, c.name)}
-              active={treatments.includes(c.name)}
-              onClick={() => toggleTreatment(c.name)}
-            />
-          ))}
+      {/* Provider spotlight */}
+      <section className="rounded-3xl bg-brand-dark px-6 py-10 text-white sm:px-10 sm:py-12">
+        <div className="grid gap-6 sm:grid-cols-2 sm:items-center">
+          <div>
+            <h2 className="text-2xl font-bold sm:text-3xl">Are you a self-care pro?</h2>
+            <p className="mt-3 text-white/80">
+              Get your own booking page in minutes. Keep 100% of what you earn, own your client list, and let
+              clients book you directly.
+            </p>
+            <Link
+              href="/join"
+              className="mt-5 inline-block rounded-xl bg-white px-6 py-3 font-semibold text-brand-dark hover:bg-gray-100"
+            >
+              Become a Service Provider
+            </Link>
+          </div>
+          <ul className="space-y-3 text-sm text-white/90">
+            <li className="flex items-center gap-2"><span className="text-green-300">✓</span> Keep 100% — 0% commission, ever</li>
+            <li className="flex items-center gap-2"><span className="text-green-300">✓</span> Your clients stay yours</li>
+            <li className="flex items-center gap-2"><span className="text-green-300">✓</span> Mobile-friendly — set the areas you travel to</li>
+            <li className="flex items-center gap-2"><span className="text-green-300">✓</span> Free to start, low flat fee to grow</li>
+          </ul>
         </div>
       </section>
 
-      {/* Trending / results */}
-      <section id="results">
-        <div className="mb-4 flex flex-wrap items-center gap-3">
-          <h2 className="text-lg font-semibold">
-            {isFiltering ? `Results (${filtered.length})` : "Trending providers"}
-          </h2>
-          <button
-            onClick={() => setMobileOnly((v) => !v)}
-            className={`rounded-full border px-3 py-1 text-sm ${
-              mobileOnly ? "border-brand bg-brand-light text-brand-dark" : "bg-white text-gray-600"
-            }`}
-          >
-            🚗 Mobile only
-          </button>
-          <div className="ml-auto flex items-center gap-2">
-            {isFiltering && (
+      {/* Results (only when actively searching) */}
+      {isFiltering && (
+        <section id="results">
+          <div className="mb-4 flex flex-wrap items-center gap-3">
+            <h2 className="text-lg font-semibold">Results ({filtered.length})</h2>
+            <button
+              onClick={() => setMobileOnly((v) => !v)}
+              className={`rounded-full border px-3 py-1 text-sm ${
+                mobileOnly ? "border-brand bg-brand-light text-brand-dark" : "bg-white text-gray-600"
+              }`}
+            >
+              🚗 Mobile only
+            </button>
+            <div className="ml-auto flex items-center gap-2">
               <button onClick={clearAll} className="text-sm text-brand hover:underline">
                 Clear
               </button>
-            )}
-            <select
-              value={sort}
-              onChange={(e) => setSort(e.target.value as Sort)}
-              className="rounded-lg border bg-white px-2 py-1.5 text-sm"
-              aria-label="Sort providers"
-            >
-              <option value="trending">Trending</option>
-              <option value="rating">Top rated</option>
-              <option value="name">Name A–Z</option>
-            </select>
+              <select
+                value={sort}
+                onChange={(e) => setSort(e.target.value as Sort)}
+                className="rounded-lg border bg-white px-2 py-1.5 text-sm"
+                aria-label="Sort providers"
+              >
+                <option value="trending">Best match</option>
+                <option value="rating">Top rated</option>
+                <option value="name">Name A–Z</option>
+              </select>
+            </div>
           </div>
-        </div>
 
-        {filtered.length === 0 ? (
-          <p className="rounded-xl border border-dashed bg-white p-8 text-center text-sm text-gray-500">
-            No providers match that search yet. Try a different treatment or area.
-          </p>
-        ) : (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {filtered.map((p) => (
-              <ProviderCard key={p.businessId} p={p} />
-            ))}
-          </div>
-        )}
-      </section>
+          {filtered.length === 0 ? (
+            <p className="rounded-xl border border-dashed bg-white p-8 text-center text-sm text-gray-500">
+              No providers match that search yet. Try a different treatment or area.
+            </p>
+          ) : (
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {filtered.map((p) => (
+                <ProviderCard key={p.businessId} p={p} />
+              ))}
+            </div>
+          )}
+        </section>
+      )}
     </div>
-  );
-}
-
-function CategoryChip({
-  label,
-  emoji,
-  active,
-  onClick,
-}: {
-  label: string;
-  emoji: string;
-  active: boolean;
-  onClick: () => void;
-}) {
-  return (
-    <button onClick={onClick} className="flex shrink-0 flex-col items-center gap-2">
-      <span
-        className={`flex h-[72px] w-[72px] items-center justify-center rounded-full text-2xl transition ${
-          active ? "bg-brand text-white ring-2 ring-brand ring-offset-2" : "bg-brand-light"
-        }`}
-      >
-        {emoji}
-      </span>
-      <span className={`text-sm ${active ? "font-semibold text-brand-dark" : "text-gray-700"}`}>{label}</span>
-    </button>
   );
 }
 
