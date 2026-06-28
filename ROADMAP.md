@@ -70,11 +70,13 @@ Goal: get our real mobile hairdresser using it live, learn from real usage + dis
     Shaving. TODO: optional light headline personalisation (controlled "specialty" pick) — later;
     real photo upload (Storage); profanity blocklist on name/bio.
   - **Travel/buffer time between appointments** — SP-controlled selector (None/15/30/45 min, default
-    None) on `/join` step 4, stored in `business_settings.default_buffer_minutes`. ⬜ ENFORCEMENT
-    PENDING: make `availableSlots` leave that gap around bookings (expand busy intervals by the
-    buffer) + surface the buffer to the public booking page (business_settings isn't publicly
-    readable post-RLS-lockdown, so route it via the `public_busy_times` RPC or provider_profiles).
-    Build/behaviour-test when sandbox is back. *(Decided 27 Jun.)*
+    None) on `/join` step 4, stored in `business_settings.default_buffer_minutes`. ✅ ENFORCED
+    (27 Jun): the `public_busy_times` SECURITY-DEFINER function now expands each busy interval by the
+    business's `default_buffer_minutes` (it can read business_settings despite RLS), so booking slots
+    leave that gap automatically; the old hardcoded 10-min client buffer in `availableSlots` was
+    removed. Verified: a 09:00–10:00 booking with a 10-min buffer returns as 08:50–10:10. NOTE:
+    buffer is only settable at onboarding for now — exposing it in studio editing is part of the
+    "Studio editing" item.
 - ⬜ **Provider search** — home search filters listed providers client-side now; promote to a
   server-side search/`/discover` page (name, treatment, area) as provider count grows.
 - ✅ **Auth** (Supabase email/password) + owner-scoped RLS — DONE & verified 27 Jun (anon blocked from client data; providers see only their own). Studio is session-based; /admin auth-gated.

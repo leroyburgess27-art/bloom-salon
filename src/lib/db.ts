@@ -110,7 +110,8 @@ export async function availableSlots(
 
   const { data: bks } = await supabase.rpc("public_busy_times", { p_stylist: stylistId, p_date: dateISO });
 
-  const buffer = 10;
+  // Busy intervals already include the provider's travel/buffer time — it's
+  // applied server-side in public_busy_times — so we test plain overlap here.
   const busy: { start: Date; end: Date }[] = (bks ?? []).map((b: any) => ({ start: new Date(b.starts_at), end: new Date(b.ends_at) }));
 
   const dayStart = new Date(`${dateISO}T${(wh[0] as any).start_time}`);
@@ -122,7 +123,7 @@ export async function availableSlots(
   for (let t = new Date(dayStart); add(t, svc.durationMinutes) <= dayEnd; t = add(t, STEP_MINUTES)) {
     const start = new Date(t);
     const end = add(start, svc.durationMinutes);
-    const overlaps = busy.some((b) => start < add(b.end, buffer) && add(end, buffer) > b.start);
+    const overlaps = busy.some((b) => start < b.end && end > b.start);
     slots.push({ start: start.toISOString(), end: end.toISOString(), available: !overlaps && start > now });
   }
   return slots;
