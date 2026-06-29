@@ -1,24 +1,10 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { BRAND_TAGLINE } from "@/lib/brand";
 import type { TrendingProvider, ServiceCategoryRow } from "@/lib/db";
-
-const CATEGORY_EMOJI: Record<string, string> = {
-  hair: "💇",
-  nails: "💅",
-  brows: "✨",
-  makeup: "💄",
-  lashes: "👁️",
-  waxing: "🍯",
-  braiding: "🪢",
-  barber: "💈",
-  skincare: "🧴",
-  facials: "🧖",
-  shaving: "🪒",
-  massage: "💆",
-};
+import TreatmentIcon from "@/components/TreatmentIcon";
 
 const CAPE_TOWN_AREAS = [
   "Sea Point", "Green Point", "Mouille Point", "City Bowl (CBD)", "Gardens", "Tamboerskloof",
@@ -35,10 +21,6 @@ const CAPE_TOWN_AREAS = [
 ];
 
 type Sort = "trending" | "rating" | "name";
-
-function emojiFor(slug: string, name: string): string {
-  return CATEGORY_EMOJI[slug] ?? CATEGORY_EMOJI[name.toLowerCase()] ?? "🌸";
-}
 
 function initials(name: string): string {
   return name
@@ -62,6 +44,20 @@ export default function Discover({
   const [areaOpen, setAreaOpen] = useState(false);
   const [mobileOnly, setMobileOnly] = useState(false);
   const [sort, setSort] = useState<Sort>("trending");
+
+  const treatRef = useRef<HTMLDivElement>(null);
+  const areaRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!treatOpen && !areaOpen) return;
+    function onDown(e: MouseEvent) {
+      const t = e.target as Node;
+      if (treatRef.current && !treatRef.current.contains(t)) setTreatOpen(false);
+      if (areaRef.current && !areaRef.current.contains(t)) setAreaOpen(false);
+    }
+    document.addEventListener("mousedown", onDown);
+    return () => document.removeEventListener("mousedown", onDown);
+  }, [treatOpen, areaOpen]);
 
   function toggleTreatment(name: string) {
     setTreatments((prev) => (prev.includes(name) ? prev.filter((t) => t !== name) : [...prev, name]));
@@ -123,7 +119,7 @@ export default function Discover({
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
               {/* Provider search */}
               <div className="flex flex-1 items-center gap-2 px-3">
-                <span className="text-gray-400">🔍</span>
+                <TreatmentIcon name="search" className="h-4 w-4 shrink-0 text-gray-400" />
                 <input
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
@@ -135,13 +131,13 @@ export default function Discover({
               <div className="hidden w-px self-stretch bg-gray-200 sm:block" />
 
               {/* Treatments dropdown */}
-              <div className="relative flex-1">
+              <div ref={treatRef} className="relative flex-1">
                 <button
                   type="button"
                   onClick={() => setTreatOpen((o) => !o)}
                   className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm"
                 >
-                  <span className="text-gray-400">🧖</span>
+                  <TreatmentIcon name="sparkles" className="h-4 w-4 shrink-0 text-gray-400" />
                   <span className={`flex-1 ${treatments.length ? "text-gray-900" : "text-gray-400"}`}>
                     {treatments.length ? `${treatments.length} treatment${treatments.length > 1 ? "s" : ""}` : "All treatments"}
                   </span>
@@ -149,7 +145,6 @@ export default function Discover({
                 </button>
                 {treatOpen && (
                   <>
-                    <div className="fixed inset-0 z-30" onClick={() => setTreatOpen(false)} />
                     <div className="absolute left-0 top-full z-40 mt-1 max-h-72 w-64 overflow-y-auto rounded-xl border bg-white p-1 text-left shadow-lg">
                       {categories.map((c) => {
                         const sel = treatments.includes(c.name);
@@ -162,7 +157,7 @@ export default function Discover({
                               sel ? "bg-brand-light" : ""
                             }`}
                           >
-                            <span className="text-lg">{emojiFor(c.slug, c.name)}</span>
+                            <TreatmentIcon name={c.slug} className="h-5 w-5 shrink-0 text-brand" />
                             <span className="flex-1">{c.name}</span>
                             {sel && <span className="text-brand">✓</span>}
                           </button>
@@ -176,8 +171,8 @@ export default function Discover({
               <div className="hidden w-px self-stretch bg-gray-200 sm:block" />
 
               {/* Area with suggestions */}
-              <div className="relative flex flex-1 items-center gap-2 px-3">
-                <span className="text-gray-400">📍</span>
+              <div ref={areaRef} className="relative flex flex-1 items-center gap-2 px-3">
+                <TreatmentIcon name="pin" className="h-4 w-4 shrink-0 text-gray-400" />
                 <input
                   value={area}
                   onChange={(e) => {
@@ -190,7 +185,6 @@ export default function Discover({
                 />
                 {areaOpen && areaMatches.length > 0 && (
                   <>
-                    <div className="fixed inset-0 z-30" onClick={() => setAreaOpen(false)} />
                     <div className="absolute left-0 top-full z-40 mt-1 max-h-64 w-64 overflow-y-auto rounded-xl border bg-white p-1 text-left shadow-lg">
                       {areaMatches.map((s) => (
                         <button
@@ -202,7 +196,7 @@ export default function Discover({
                           }}
                           className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm hover:bg-gray-50"
                         >
-                          <span className="text-gray-400">📍</span>
+                          <TreatmentIcon name="pin" className="h-4 w-4 shrink-0 text-gray-400" />
                           <span>{s}</span>
                         </button>
                       ))}
@@ -240,12 +234,12 @@ export default function Discover({
       {/* How it works */}
       <section className="grid gap-4 sm:grid-cols-3">
         {[
-          { icon: "🔎", title: "Find a pro", body: "Browse trusted local specialists by treatment and area." },
-          { icon: "📅", title: "Book direct", body: "Pick a service and time. No middleman, no mark-up." },
-          { icon: "🚗", title: "They come to you", body: "Mobile pros travel to your home — or visit their studio." },
+          { icon: "find", title: "Find a pro", body: "Browse trusted local specialists by treatment and area." },
+          { icon: "book", title: "Book direct", body: "Pick a service and time. No middleman, no mark-up." },
+          { icon: "come", title: "They come to you", body: "Mobile pros travel to your home — or visit their studio." },
         ].map((s) => (
           <div key={s.title} className="rounded-2xl border bg-white p-5">
-            <div className="text-2xl">{s.icon}</div>
+            <TreatmentIcon name={s.icon} className="h-8 w-8 text-brand" />
             <h3 className="mt-2 font-semibold">{s.title}</h3>
             <p className="mt-1 text-sm text-gray-600">{s.body}</p>
           </div>
@@ -293,7 +287,7 @@ export default function Discover({
                 mobileOnly ? "border-brand bg-brand-light text-brand-dark" : "bg-white text-gray-600"
               }`}
             >
-              🚗 Mobile only
+              <span className="inline-flex items-center gap-1"><TreatmentIcon name="van" className="h-4 w-4" /> Mobile only</span>
             </button>
             <div className="ml-auto flex items-center gap-2">
               <button onClick={clearAll} className="text-sm text-brand hover:underline">
@@ -350,7 +344,7 @@ function ProviderCard({ p }: { p: TrendingProvider }) {
         )}
         {p.acceptsMobile && (
           <span className="absolute left-3 top-3 rounded-full bg-white/90 px-2.5 py-1 text-xs font-medium text-gray-800 shadow-sm">
-            🚗 Mobile
+            <span className="inline-flex items-center gap-1"><TreatmentIcon name="van" className="h-3.5 w-3.5" /> Mobile</span>
           </span>
         )}
         {p.verificationLevel !== "none" && (
@@ -374,7 +368,7 @@ function ProviderCard({ p }: { p: TrendingProvider }) {
           )}
         </div>
         {p.headline && <p className="mt-0.5 text-sm text-gray-600">{p.headline}</p>}
-        {p.baseArea && <p className="mt-1 text-xs text-gray-500">📍 {p.baseArea}</p>}
+        {p.baseArea && <p className="mt-1 flex items-center gap-1 text-xs text-gray-500"><TreatmentIcon name="pin" className="h-3.5 w-3.5" /> {p.baseArea}</p>}
         {p.categories.length > 0 && (
           <div className="mt-3 flex flex-wrap gap-1.5">
             {p.categories.map((c) => (
