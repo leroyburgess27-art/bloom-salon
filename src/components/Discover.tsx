@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { BRAND_TAGLINE } from "@/lib/brand";
 import type { ServiceCategoryRow } from "@/lib/db";
-import TreatmentIcon from "@/components/TreatmentIcon";
 import SearchPill from "@/components/SearchPill";
 
 export default function Discover({
@@ -61,16 +60,19 @@ export default function Discover({
       </section>
 
       {/* How it works */}
-      <section className="grid gap-4 sm:grid-cols-3">
+      <section className="grid gap-8 sm:grid-cols-3">
         {[
-          { icon: "find", title: "Find a pro", body: "Browse trusted local specialists by treatment and area." },
-          { icon: "book", title: "Book direct", body: "Pick a service and time. No middleman, no mark-up." },
-          { icon: "come", title: "They come to you", body: "Mobile pros travel to your home — or visit their studio." },
+          { img: "/how-it-works/find-a-pro.webp", title: "Find a pro", body: "Browse trusted local specialists by treatment and area." },
+          { img: "/how-it-works/book-direct.webp", title: "Book direct", body: "Pick a service and time. No middleman, no mark-up." },
+          { img: "/how-it-works/come-to-you.webp", title: "They come to you", body: "Mobile pros travel to your home — or visit their studio." },
         ].map((s) => (
-          <div key={s.title} className="rounded-2xl border bg-white p-5">
-            <TreatmentIcon name={s.icon} className="h-8 w-8 text-brand" />
-            <h3 className="mt-2 font-semibold">{s.title}</h3>
-            <p className="mt-1 text-sm text-gray-600">{s.body}</p>
+          <div key={s.title} className="text-center">
+            <div className="flex h-48 items-center justify-center">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={s.img} alt={s.title} loading="lazy" className="h-full w-full object-contain" />
+            </div>
+            <h3 className="mt-3 font-semibold">{s.title}</h3>
+            <p className="mx-auto mt-1 max-w-xs text-sm text-gray-600">{s.body}</p>
           </div>
         ))}
       </section>

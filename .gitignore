@@ -6,3 +6,7 @@ out
 *.log
 .DS_Store
 next-env.d.ts
+
+# large source/raw images (keep optimized .webp only)
+/how-it-works.png
+/public/how-it-works/*.png
