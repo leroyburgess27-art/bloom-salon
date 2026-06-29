@@ -591,6 +591,7 @@ export interface TrendingProvider {
   ratingAvg: number;
   ratingCount: number;
   returningClients: number;
+  priceFrom: number | null;
 }
 
 export async function trendingProviders(limit = 12): Promise<TrendingProvider[]> {
@@ -608,11 +609,21 @@ export async function trendingProviders(limit = 12): Promise<TrendingProvider[]>
   if (rows.length === 0) return [];
 
   const ids = rows.map((r) => r.business_id);
-  const [{ data: stats }, { data: links }, { data: cats }] = await Promise.all([
+  const [{ data: stats }, { data: links }, { data: cats }, { data: svcs }] = await Promise.all([
     supabase.from("provider_stats").select("*").in("business_id", ids),
     supabase.from("provider_categories").select("business_id, category_id").in("business_id", ids),
     supabase.from("service_categories").select("id, name"),
+    supabase.from("services").select("business_id, price, active").in("business_id", ids),
   ]);
+
+  const priceByBiz = new Map<string, number>();
+  for (const sv of (svcs ?? []) as any[]) {
+    if (sv.active === false) continue;
+    const pr = Number(sv.price);
+    if (!Number.isFinite(pr) || pr <= 0) continue;
+    const cur = priceByBiz.get(sv.business_id);
+    if (cur === undefined || pr < cur) priceByBiz.set(sv.business_id, pr);
+  }
 
   const statById = new Map((stats ?? []).map((s: any) => [s.business_id, s]));
   const catNameById = new Map((cats ?? []).map((c: any) => [c.id, c.name as string]));
@@ -640,6 +651,7 @@ export async function trendingProviders(limit = 12): Promise<TrendingProvider[]>
       ratingAvg: st ? Number(st.rating_avg) : 0,
       ratingCount: st ? Number(st.rating_count) : 0,
       returningClients: st ? Number(st.returning_clients) : 0,
+      priceFrom: priceByBiz.get(r.business_id) ?? null,
     };
   });
 

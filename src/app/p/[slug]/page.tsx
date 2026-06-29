@@ -6,6 +6,7 @@ import { getProviderBySlug, availableSlots, createOrder, type ProviderPublic } f
 import type { Service, Slot } from "@/lib/types";
 import { zar, duration } from "@/lib/format";
 import { BRAND } from "@/lib/brand";
+import TreatmentIcon from "@/components/TreatmentIcon";
 
 function todayISO() {
   return new Date().toISOString().slice(0, 10);
@@ -29,8 +30,8 @@ export default function ProviderPage({ params }: { params: { slug: string } }) {
   const initials = provider.displayName.charAt(0).toUpperCase();
   const verifiedLabel =
     provider.verificationLevel === "id" ? "ID verified" : provider.verificationLevel === "profile" ? "Verified" : null;
-  const servesLabel =
-    provider.clientele === "all" ? "Everyone" : provider.clientele === "men" ? "Men" : "Women";
+  const specialties = provider.servicesByCategory.map((g) => g.category).join(" · ");
+  const ratingRounded = Math.round(provider.stats.ratingAvg);
 
   return (
     <>
@@ -47,53 +48,80 @@ export default function ProviderPage({ params }: { params: { slug: string } }) {
 
       <div className="mx-auto max-w-xl px-4 py-6">
         {/* Profile header */}
-        <div className="overflow-hidden rounded-2xl border bg-white">
-          <div className="h-20 bg-gradient-to-r from-violet-200 via-purple-100 to-pink-100" />
-          <div className="px-4 pb-4">
-            <div className="-mt-10 flex items-end justify-between">
-              {provider.photoUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={provider.photoUrl}
-                  alt={provider.displayName}
-                  className="h-20 w-20 rounded-full border-4 border-white object-cover"
-                />
-              ) : (
-                <div className="flex h-20 w-20 items-center justify-center rounded-full border-4 border-white bg-brand-light text-2xl font-bold text-brand">
-                  {initials}
-                </div>
-              )}
-              {verifiedLabel && (
-                <span className="mb-1 rounded-full bg-blue-600 px-2.5 py-1 text-xs font-medium text-white">
-                  ✓ {verifiedLabel}
-                </span>
-              )}
-            </div>
-            <h1 className="mt-3 text-xl font-bold">{provider.displayName}</h1>
-            {provider.headline && <p className="text-sm text-gray-600">{provider.headline}</p>}
-            <div className="mt-2 flex flex-wrap gap-2 text-xs">
-              {provider.acceptsMobile && (
-                <span className="rounded-full bg-brand-light px-2.5 py-1 font-medium text-brand-dark">🚗 Comes to you</span>
-              )}
-              <span className="rounded-full bg-gray-100 px-2.5 py-1 text-gray-600">Serves {servesLabel}</span>
-            </div>
-            {provider.baseArea && (
-              <p className="mt-2 text-xs text-gray-500">
-                📍 {provider.acceptsMobile ? "Travels to" : "Based in"}: {provider.baseArea}
-              </p>
+        <div className="rounded-2xl border bg-white p-5 sm:p-6">
+          <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
+            {provider.photoUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={provider.photoUrl}
+                alt={provider.displayName}
+                className="h-28 w-28 shrink-0 rounded-full object-cover sm:h-36 sm:w-36"
+              />
+            ) : (
+              <div className="flex h-28 w-28 shrink-0 items-center justify-center rounded-full bg-brand-light text-3xl font-bold text-brand sm:h-36 sm:w-36">
+                {initials}
+              </div>
             )}
-          </div>
-        </div>
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-2">
+                <h1 className="truncate text-2xl font-bold">{provider.displayName}</h1>
+                {verifiedLabel && (
+                  <span
+                    title={verifiedLabel}
+                    className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-blue-600 text-xs font-bold text-white"
+                  >
+                    ✓
+                  </span>
+                )}
+              </div>
+              {specialties && <p className="mt-0.5 text-sm text-gray-500">{specialties}</p>}
 
-        {/* Trust signals */}
-        <div className="mt-4 grid grid-cols-3 gap-3 text-center text-sm">
-          <Stat
-            label="Rating"
-            value={provider.stats.ratingCount ? `★ ${provider.stats.ratingAvg.toFixed(1)}` : "New"}
-            sub={provider.stats.ratingCount ? `${provider.stats.ratingCount} reviews` : "no reviews yet"}
-          />
-          <Stat label="Returning" value={String(provider.stats.returningClients)} sub="clients rebook" />
-          <Stat label="Status" value={verifiedLabel ?? "Unverified"} sub={provider.verificationLevel === "id" ? "ID checked" : "profile"} />
+              <div className="my-3 h-px bg-gray-100" />
+
+              <div className="space-y-1 text-sm text-gray-700">
+                <div>
+                  {provider.stats.ratingCount ? (
+                    <>
+                      <span className="text-amber-400">
+                        {"★".repeat(ratingRounded)}
+                        <span className="text-gray-200">{"★".repeat(5 - ratingRounded)}</span>
+                      </span>{" "}
+                      <span className="font-medium">{provider.stats.ratingAvg.toFixed(1)}</span>{" "}
+                      <span className="text-gray-400">
+                        ({provider.stats.ratingCount} review{provider.stats.ratingCount > 1 ? "s" : ""})
+                      </span>
+                    </>
+                  ) : (
+                    <span className="text-gray-500">No reviews yet</span>
+                  )}
+                </div>
+                {provider.stats.returningClients >= 3 && (
+                  <div>{provider.stats.returningClients} returning clients</div>
+                )}
+                {provider.acceptsMobile && (
+                  <div className="inline-flex items-center gap-1.5">
+                    <TreatmentIcon name="van" className="h-4 w-4 text-brand" /> Comes to you
+                  </div>
+                )}
+              </div>
+
+              {provider.baseArea && (
+                <p className="mt-3 text-xs text-gray-500">
+                  <span className="font-medium text-gray-700">
+                    {provider.acceptsMobile ? "Service areas:" : "Based in:"}
+                  </span>{" "}
+                  {provider.baseArea}
+                </p>
+              )}
+
+              <a
+                href="#services"
+                className="mt-4 inline-block rounded-xl bg-brand px-6 py-2.5 text-sm font-semibold text-white hover:bg-brand-dark"
+              >
+                Book now
+              </a>
+            </div>
+          </div>
         </div>
 
         {provider.bio && <p className="mt-4 whitespace-pre-line text-sm text-gray-700">{provider.bio}</p>}
@@ -106,7 +134,7 @@ export default function ProviderPage({ params }: { params: { slug: string } }) {
         )}
 
         {/* Services */}
-        <h2 className="mt-8 mb-3 text-lg font-semibold">Book a service</h2>
+        <h2 id="services" className="mt-8 mb-3 scroll-mt-20 text-lg font-semibold">Book a service</h2>
         {provider.servicesByCategory.length === 0 && (
           <p className="text-sm text-gray-500">No services listed yet.</p>
         )}
@@ -170,16 +198,6 @@ export default function ProviderPage({ params }: { params: { slug: string } }) {
         )}
       </div>
     </>
-  );
-}
-
-function Stat({ label, value, sub }: { label: string; value: string; sub: string }) {
-  return (
-    <div className="flex-1 rounded-xl border bg-white p-3">
-      <div className="text-[11px] uppercase tracking-wide text-gray-400">{label}</div>
-      <div className="text-base font-bold">{value}</div>
-      <div className="text-[11px] text-gray-400">{sub}</div>
-    </div>
   );
 }
 

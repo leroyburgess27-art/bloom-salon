@@ -1,19 +1,16 @@
 import Link from "next/link";
-import { trendingProviders, listServiceCategories } from "@/lib/db";
+import { listServiceCategories } from "@/lib/db";
 import Discover from "@/components/Discover";
 import { BRAND } from "@/lib/brand";
 
 export const revalidate = 0; // always fetch fresh providers
 
 export default async function HomePage() {
-  const [providers, categories] = await Promise.all([
-    trendingProviders(),
-    listServiceCategories(),
-  ]);
+  const categories = await listServiceCategories();
 
   return (
     <div className="space-y-12">
-      <Discover providers={providers} categories={categories} />
+      <Discover categories={categories} />
 
       {/* Footer */}
       <footer className="border-t pt-8 text-sm text-gray-500">
